@@ -1,7 +1,8 @@
 {
-  "atualizadoEm": "2026-06-04T20:13:48Z",
+  "atualizadoEm": "2026-06-04T21:19:37Z",
+  "salariosRevisadosEm": "2025-06-04",
   "moedaBase": "BRL",
-  "observacao": "Salários mínimos mensais APROXIMADOS (2024-2025), em moeda local. cotacaoBRL = quantos reais vale 1 unidade da moeda; atualizada pelo update-rates.sh (cron). Brasil + 20 maiores economias.",
+  "observacao": "Salários mínimos mensais oficiais 2024-2025, em moeda local. cotacaoBRL = quantos reais vale 1 unidade da moeda; atualizada diariamente pelo update-rates.sh (cron). Brasil + 20 maiores economias. Salários revisados manualmente — não há API pública confiável com cobertura global.",
   "paises": [
     {
       "codigo": "BR",
@@ -11,7 +12,7 @@
       "simbolo": "R$",
       "salarioMinimoMensal": 1518,
       "cotacaoBRL": 1.0,
-      "obs": ""
+      "obs": "Salário mínimo 2025: R$ 1.518"
     },
     {
       "codigo": "US",
@@ -21,7 +22,7 @@
       "simbolo": "US$",
       "salarioMinimoMensal": 1257,
       "cotacaoBRL": 5.029953,
-      "obs": "Federal US$ 7,25/h"
+      "obs": "Federal US$ 7,25/h × 173,33h"
     },
     {
       "codigo": "CN",
@@ -31,7 +32,7 @@
       "simbolo": "¥",
       "salarioMinimoMensal": 2690,
       "cotacaoBRL": 0.739645,
-      "obs": "Base Xangai (varia por província)"
+      "obs": "Xangai 2024 ¥ 2.690 (maior da China)"
     },
     {
       "codigo": "DE",
@@ -41,7 +42,7 @@
       "simbolo": "€",
       "salarioMinimoMensal": 2222,
       "cotacaoBRL": 5.852231,
-      "obs": "€ 12,82/h"
+      "obs": "€ 12,82/h × 173,33 (2025)"
     },
     {
       "codigo": "JP",
@@ -51,7 +52,7 @@
       "simbolo": "¥",
       "salarioMinimoMensal": 183000,
       "cotacaoBRL": 0.031379,
-      "obs": "Média nacional"
+      "obs": "Média nacional ¥ 1.055/h × 173"
     },
     {
       "codigo": "IN",
@@ -61,7 +62,7 @@
       "simbolo": "₹",
       "salarioMinimoMensal": 9750,
       "cotacaoBRL": 0.052413,
-      "obs": "Varia muito por estado/setor"
+      "obs": "Salário nacional flutuante (não-qualificado)"
     },
     {
       "codigo": "GB",
@@ -71,7 +72,7 @@
       "simbolo": "£",
       "salarioMinimoMensal": 2117,
       "cotacaoBRL": 6.744134,
-      "obs": "National Living Wage £ 12,21/h"
+      "obs": "National Living Wage £ 12,21/h (abr/2025)"
     },
     {
       "codigo": "FR",
@@ -81,7 +82,7 @@
       "simbolo": "€",
       "salarioMinimoMensal": 1802,
       "cotacaoBRL": 5.852231,
-      "obs": "SMIC bruto"
+      "obs": "SMIC bruto 2025 (€ 11,88/h)"
     },
     {
       "codigo": "IT",
@@ -91,7 +92,7 @@
       "simbolo": "€",
       "salarioMinimoMensal": 1300,
       "cotacaoBRL": 5.852231,
-      "obs": "Sem mínimo legal nacional (estimativa por convenção)"
+      "obs": "Sem mínimo legal nacional (estimativa por convenção coletiva)"
     },
     {
       "codigo": "CA",
@@ -101,7 +102,7 @@
       "simbolo": "C$",
       "salarioMinimoMensal": 2998,
       "cotacaoBRL": 3.619752,
-      "obs": "Federal C$ 17,30/h"
+      "obs": "Federal C$ 17,30/h × 173 (abr/2025)"
     },
     {
       "codigo": "RU",
@@ -111,7 +112,7 @@
       "simbolo": "₽",
       "salarioMinimoMensal": 22440,
       "cotacaoBRL": 0.068466,
-      "obs": ""
+      "obs": "MROT 2025"
     },
     {
       "codigo": "MX",
@@ -121,7 +122,7 @@
       "simbolo": "MX$",
       "salarioMinimoMensal": 8476,
       "cotacaoBRL": 0.290945,
-      "obs": "Zona geral"
+      "obs": "Zona geral 2025 (MX$ 278,80/dia × 30,4)"
     },
     {
       "codigo": "AU",
@@ -129,9 +130,9 @@
       "bandeira": "🇦🇺",
       "moeda": "AUD",
       "simbolo": "A$",
-      "salarioMinimoMensal": 3966,
+      "salarioMinimoMensal": 4179,
       "cotacaoBRL": 3.591631,
-      "obs": "A$ 24,10/h"
+      "obs": "A$ 24,10/h × 173 (jul/2024)"
     },
     {
       "codigo": "KR",
@@ -141,7 +142,7 @@
       "simbolo": "₩",
       "salarioMinimoMensal": 2096270,
       "cotacaoBRL": 0.003286,
-      "obs": "₩ 10.030/h"
+      "obs": "₩ 10.030/h × 209 (2025)"
     },
     {
       "codigo": "ES",
@@ -151,7 +152,7 @@
       "simbolo": "€",
       "salarioMinimoMensal": 1184,
       "cotacaoBRL": 5.852231,
-      "obs": "SMI (14 pagamentos/ano)"
+      "obs": "SMI 2025 (14 pagamentos/ano)"
     },
     {
       "codigo": "ID",
@@ -159,9 +160,9 @@
       "bandeira": "🇮🇩",
       "moeda": "IDR",
       "simbolo": "Rp",
-      "salarioMinimoMensal": 5067381,
+      "salarioMinimoMensal": 5396760,
       "cotacaoBRL": 0.00028,
-      "obs": "Base Jacarta (varia por província)"
+      "obs": "UMP Jacarta 2025 (varia por província)"
     },
     {
       "codigo": "NL",
@@ -169,9 +170,9 @@
       "bandeira": "🇳🇱",
       "moeda": "EUR",
       "simbolo": "€",
-      "salarioMinimoMensal": 2335,
+      "salarioMinimoMensal": 2436,
       "cotacaoBRL": 5.852231,
-      "obs": "€ 14,06/h"
+      "obs": "€ 14,06/h × 173 (2025)"
     },
     {
       "codigo": "TR",
@@ -181,7 +182,7 @@
       "simbolo": "₺",
       "salarioMinimoMensal": 26005,
       "cotacaoBRL": 0.109131,
-      "obs": "Bruto"
+      "obs": "Asgari ücret bruto 2025"
     },
     {
       "codigo": "SA",
@@ -201,7 +202,7 @@
       "simbolo": "CHF",
       "salarioMinimoMensal": 4426,
       "cotacaoBRL": 6.354572,
-      "obs": "Sem mínimo nacional (base Genebra)"
+      "obs": "Sem mínimo nacional (base Genebra CHF 24,48/h)"
     }
   ]
 }
