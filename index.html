@@ -170,7 +170,6 @@
   </div>
 
   <div class="scanhint" id="scanHint">Alinhe o preço dentro da mira</div>
-  <div class="dots" id="dots"><span class="d"></span><span class="d"></span><span class="d"></span></div>
 
   <!-- Gesto inicial obrigatório (iOS) -->
   <div id="startGate">
@@ -232,16 +231,28 @@
 (() => {
   'use strict';
 
-  /* ───────── Configuração / constantes ───────── */
+  /* ╔══════════════════ AJUSTES FINOS (CONFIG) ══════════════════╗
+     Mexa só aqui para calibrar o comportamento do app.            */
+  const CONFIG = {
+    HORAS_MES_DEFAULT : 220,    // jornada CLT padrão (horas/mês)
+    LOG_CAP           : 200,    // máximo de entradas no histórico
+    OCR_INTERVAL      : 600,    // throttle entre leituras (ms)
+    RESULT_HOLD_MS    : 4500,   // tempo nítido do resultado
+    RESULT_FADE_MS    : 1500,   // duração do fade-out (HOLD+FADE ≈ 6s no total)
+    DEDUP_WINDOW_MS   : 10000,  // janela p/ não duplicar a mesma leitura no log
+    MULTILINE         : true,   // ler vários preços empilhados (1 por linha)
+    MAX_LINES         : 6,      // teto de preços exibidos ao mesmo tempo
+    MAX_PLAUSIBLE     : 1000000 // acima disso é ruído de OCR
+  };
+  /* ╚═════════════════════════════════════════════════════════════╝ */
   const LS = { salary:'pes_salary', hours:'pes_hours', log:'pes_log' };
-  const HORAS_MES_DEFAULT = 220;          // jornada CLT padrão
-  const LOG_CAP = 200;                    // máximo de entradas no histórico
-  const OCR_INTERVAL = 700;               // throttle do loop (ms) — ~1 leitura/0,7s
-  const CONSENSUS_NEEDED = 2;             // ao menos 2 de 3 leituras iguais
-  const RESULT_HOLD_MS = 8000;            // resultado fica 8s visível
-  const RESULT_FADE_MS = 1500;            // depois esmaece em 1,5s
-  const DEDUP_WINDOW_MS = 10000;          // não loga leitura idêntica dentro de 10s
-  const MAX_PLAUSIBLE = 1000000;          // acima disso é ruído de OCR
+  const HORAS_MES_DEFAULT = CONFIG.HORAS_MES_DEFAULT;
+  const LOG_CAP           = CONFIG.LOG_CAP;
+  const OCR_INTERVAL      = CONFIG.OCR_INTERVAL;
+  const RESULT_HOLD_MS    = CONFIG.RESULT_HOLD_MS;
+  const RESULT_FADE_MS    = CONFIG.RESULT_FADE_MS;
+  const DEDUP_WINDOW_MS   = CONFIG.DEDUP_WINDOW_MS;
+  const MAX_PLAUSIBLE     = CONFIG.MAX_PLAUSIBLE;
 
   /* ───────── Estado ───────── */
   let salary = parseFloat(localStorage.getItem(LS.salary)) || 0;
@@ -254,9 +265,8 @@
   let scanning = false;                   // loop de OCR ativo?
   let ocrBusy = false;                    // já existe uma leitura em andamento?
   let lastTick = 0;
-  let consensusBuf = [];                  // buffer das 3 coletas
   let resultActive = false;               // exibindo resultado (pausa o scan)
-  let lastLogged = { val:null, ts:0 };    // p/ dedup
+  let recentLogs = [];                    // [{val,ts}] p/ dedup do log
   let rafId = null;
 
   /* ───────── Elementos ───────── */
@@ -264,7 +274,7 @@
   const setupScreen=$('setupScreen'), camScreen=$('camScreen');
   const video=$('video'), overlay=$('overlay'), octx=overlay.getContext('2d');
   const startGate=$('startGate'), camError=$('camError');
-  const dotsEl=$('dots'), scanHint=$('scanHint');
+  const scanHint=$('scanHint');
 
   // canvases reutilizáveis (não recriar por frame → sem vazamento)
   const roiCanvas = document.createElement('canvas');   // recorte colorido p/ amostra de cor
@@ -368,20 +378,28 @@
   }
   function rgbCss(c){ return `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`; }
 
-  // k-means simples com k=2 sobre pixels amostrados → [corA, corB] com contagens
-  function dominantColors(imgData){
-    const d=imgData.data, n=d.length/4;
-    const step = Math.max(1, Math.floor(n/3000)); // amostra ~3000 px
+  // k-means k=2 sobre os pixels (opcionalmente só dentro de `region` da imagem)
+  function dominantColors(imgData, region){
+    const W=imgData.width, H=imgData.height, d=imgData.data;
+    const x0=Math.max(0, Math.floor(region?region.x0:0));
+    const y0=Math.max(0, Math.floor(region?region.y0:0));
+    const x1=Math.min(W, Math.ceil(region?region.x1:W));
+    const y1=Math.min(H, Math.ceil(region?region.y1:H));
+    const cols=Math.max(1,x1-x0), rows=Math.max(1,y1-y0);
+    const stepX=Math.max(1, Math.floor(cols/60));   // amostra ~60x60 px
+    const stepY=Math.max(1, Math.floor(rows/60));
     // sementes: claro e escuro
     let cA=[40,40,40], cB=[220,220,220];
     for(let it=0; it<6; it++){
       let sA=[0,0,0], nA=0, sB=[0,0,0], nB=0;
-      for(let i=0;i<n;i+=step){
-        const p=i*4, r=d[p], g=d[p+1], b=d[p+2];
-        const dA=(r-cA[0])**2+(g-cA[1])**2+(b-cA[2])**2;
-        const dB=(r-cB[0])**2+(g-cB[1])**2+(b-cB[2])**2;
-        if(dA<=dB){sA[0]+=r;sA[1]+=g;sA[2]+=b;nA++;}
-        else{sB[0]+=r;sB[1]+=g;sB[2]+=b;nB++;}
+      for(let yy=y0; yy<y1; yy+=stepY){
+        for(let xx=x0; xx<x1; xx+=stepX){
+          const p=(yy*W+xx)*4, r=d[p], g=d[p+1], b=d[p+2];
+          const dA=(r-cA[0])**2+(g-cA[1])**2+(b-cA[2])**2;
+          const dB=(r-cB[0])**2+(g-cB[1])**2+(b-cB[2])**2;
+          if(dA<=dB){sA[0]+=r;sA[1]+=g;sA[2]+=b;nA++;}
+          else{sB[0]+=r;sB[1]+=g;sB[2]+=b;nB++;}
+        }
       }
       if(nA){cA=[sA[0]/nA,sA[1]/nA,sA[2]/nA];}
       if(nB){cB=[sB[0]/nB,sB[1]/nB,sB[2]/nB];}
@@ -429,7 +447,7 @@
   /* ════════════════════════════════════════════════════════════
      DESENHO DO OVERLAY (mira + resultado)
      ════════════════════════════════════════════════════════════ */
-  let resultBox = null;        // {bg,fg,big,small,startTs}
+  let resultBox = null;        // { items:[{bg,fg,big,small,yTop,yBot}], startTs }
   function resizeOverlay(){
     overlay.width = Math.round(window.innerWidth*dpr());
     overlay.height= Math.round(window.innerHeight*dpr());
@@ -458,7 +476,7 @@
   }
 
   function drawResult(rect){
-    if(!resultBox) return;
+    if(!resultBox || !resultBox.items.length) return;
     const elapsed = performance.now()-resultBox.startTs;
     let alpha=1;
     if(elapsed > RESULT_HOLD_MS){
@@ -468,29 +486,53 @@
 
     const {x,y,w,h}=rect;
     octx.save();
-    octx.globalAlpha=alpha;
-    // bloco com cores amostradas, centralizado sobre o alvo
-    const pad=14*dpr(), radius=12*dpr();
-    roundRect(x,y,w,h,radius);
-    octx.fillStyle=rgbCss(resultBox.bg);
-    octx.fill();
-
-    octx.fillStyle=rgbCss(resultBox.fg);
     octx.textAlign='center'; octx.textBaseline='middle';
-    // tamanho grande para o tempo de trabalho
-    let big=Math.floor(h*0.42);
-    octx.font=`800 ${big}px system-ui,-apple-system,sans-serif`;
-    // encolhe a fonte se o texto não couber
-    while(octx.measureText(resultBox.big).width > w-pad*2 && big>10){
-      big-=2; octx.font=`800 ${big}px system-ui,-apple-system,sans-serif`;
+
+    const items=resultBox.items;          // já ordenados de cima p/ baixo
+    const minH=h*0.15, gap=2*dpr();
+    let cursor=y;                          // evita sobreposição entre bandas
+    for(const it of items){
+      // banda vertical alinhada à posição real do preço na etiqueta
+      let bh=Math.max((it.yBot-it.yTop)*h, minH);
+      let top=Math.max(y + it.yTop*h, cursor);
+      if(top+bh > y+h) top=Math.max(y, y+h-bh);
+      // bloco com a cor de fundo amostrada da própria linha da etiqueta
+      const radius=Math.min(12*dpr(), bh*0.3);
+      roundRect(x,top,w,bh,radius);
+      octx.globalAlpha=alpha;
+      octx.fillStyle=rgbCss(it.bg);
+      octx.fill();
+      // texto com a cor amostrada (contraste WCAG garantido)
+      octx.fillStyle=rgbCss(it.fg);
+      const innerW=w-20*dpr();
+      if(bh > h*0.30){
+        // banda alta: tempo grande em cima, preço menor embaixo
+        fitFont(it.big, innerW, Math.floor(bh*0.44), '800');
+        octx.globalAlpha=alpha;
+        octx.fillText(it.big, x+w/2, top+bh*0.40);
+        fitFont(it.small, innerW, Math.floor(bh*0.24), '600');
+        octx.globalAlpha=alpha*0.85;
+        octx.fillText(it.small, x+w/2, top+bh*0.73);
+      } else {
+        // banda baixa (muitos preços): tempo · preço na mesma linha
+        const inline=it.big+'   ·   '+it.small;
+        fitFont(inline, innerW, Math.floor(bh*0.5), '700');
+        octx.globalAlpha=alpha;
+        octx.fillText(inline, x+w/2, top+bh*0.55);
+      }
+      cursor=top+bh+gap;
     }
-    octx.fillText(resultBox.big, x+w/2, y+h*0.40);
-    // preço original, menor
-    const small=Math.floor(h*0.20);
-    octx.font=`600 ${small}px system-ui,-apple-system,sans-serif`;
-    octx.globalAlpha=alpha*0.85;
-    octx.fillText(resultBox.small, x+w/2, y+h*0.74);
     octx.restore();
+  }
+
+  // reduz o tamanho da fonte até o texto caber em maxW
+  function fitFont(text, maxW, startPx, weight){
+    let px=Math.max(10, startPx);
+    octx.font=`${weight} ${px}px system-ui,-apple-system,sans-serif`;
+    while(octx.measureText(text).width > maxW && px>10){
+      px-=1; octx.font=`${weight} ${px}px system-ui,-apple-system,sans-serif`;
+    }
+    return px;
   }
 
   function roundRect(x,y,w,h,r){
@@ -548,7 +590,7 @@
       dst[i]=dst[i+1]=dst[i+2]=v; dst[i+3]=255;
     }
     ocrCtx.putImageData(img,0,0);
-    return { colorData };
+    return { colorData, outW, outH };
   }
 
   /* ════════════════════════════════════════════════════════════
@@ -564,7 +606,7 @@
       });
       await worker.setParameters({
         tessedit_char_whitelist:'0123456789R$,. ',
-        tessedit_pageseg_mode:'7'        // PSM 7: trata a ROI como uma única linha de texto
+        tessedit_pageseg_mode:'6'        // PSM 6: bloco uniforme → lê várias linhas de preço
       });
       workerReady=true;
     }catch(e){
@@ -583,24 +625,14 @@
       const cap=captureROI();
       if(!cap){ ocrBusy=false; return; }
       const { data } = await worker.recognize(ocrCanvas);
-      const price = extractPrice(data.text);
-      if(price!=null){
-        consensusBuf.push(price);
-        if(consensusBuf.length>3) consensusBuf.shift();
-        updateDots(consensusBuf.length);
-        if(consensusBuf.length>=3){
-          const decided=decideConsensus(consensusBuf);
-          if(decided!=null){
-            // guarda a amostra de cor do MOMENTO da confirmação
-            confirmPrice(decided, cap.colorData);
-            consensusBuf=[]; updateDots(0);
-          } else {
-            consensusBuf.shift(); // sem consenso: desliza a janela e continua
-          }
-        }
-      } else {
-        // leitura vazia esvazia gradualmente o buffer
-        if(consensusBuf.length) { consensusBuf.shift(); updateDots(consensusBuf.length); }
+      // SEM consenso: assim que ler, já mostra. Pode haver vários preços (1 por linha).
+      let prices=pricesFromData(data, cap.outW, cap.outH);
+      if(!CONFIG.MULTILINE && prices.length>1){
+        prices=[prices.reduce((a,b)=>b.price>a.price?b:a)];   // só o maior
+      }
+      if(prices.length){
+        prices=prices.slice(0, CONFIG.MAX_LINES);
+        confirmPrices(prices, cap.colorData, cap.outW, cap.outH);
       }
     }catch(e){
       // ignora erros pontuais de frame
@@ -609,50 +641,68 @@
     }
   }
 
-  // consenso: ≥2 de 3 com mesmo valor (arredondado a centavos)
-  function decideConsensus(buf){
-    const key=v=>v.toFixed(2);
-    const counts={};
-    for(const v of buf){ const k=key(v); counts[k]=(counts[k]||0)+1; }
-    let bestK=null,bestC=0;
-    for(const k in counts){ if(counts[k]>bestC){bestC=counts[k];bestK=k;} }
-    return bestC>=CONSENSUS_NEEDED ? parseFloat(bestK) : null;
+  // extrai um preço por linha de texto do OCR, com a posição vertical (bbox) de cada
+  function pricesFromData(data, outW, outH){
+    const out=[];
+    const lines=(data && data.lines) ? data.lines : null;
+    if(lines && lines.length){
+      for(const ln of lines){
+        const price=extractPrice(ln.text);
+        if(price==null) continue;
+        const bb=ln.bbox || {y0:0,y1:outH};
+        out.push({ price, y0:bb.y0, y1:bb.y1 });
+      }
+    }
+    // fallback: sem bbox → distribui as linhas de texto igualmente na vertical
+    if(!out.length && data && data.text){
+      const tl=data.text.split('\n').map(s=>s.trim()).filter(Boolean);
+      const n=tl.length||1;
+      tl.forEach((t,i)=>{
+        const p=extractPrice(t);
+        if(p!=null) out.push({ price:p, y0:(i/n)*outH, y1:((i+1)/n)*outH });
+      });
+    }
+    return out;
   }
 
-  function updateDots(n){
-    const ds=dotsEl.children;
-    for(let i=0;i<ds.length;i++) ds[i].classList.toggle('on', i<n);
-    dotsEl.classList.toggle('show', n>0);
-  }
-
-  function confirmPrice(price, colorData){
+  // confirma 1..N preços, monta os blocos de resultado e registra no log
+  function confirmPrices(prices, colorData, outW, outH){
     const vh=valorHora();
     if(vh<=0){ openBase(true); return; }
-    const horasDec = price/vh;
-    const durFmt = formatDuration(horasDec);
-    const priceFmt = formatBRL(price);
-
-    // monta bloco de resultado com cores amostradas + contraste garantido
-    const {bg,fg}=dominantColors(colorData);
-    resultBox={ bg,fg, big:durFmt, small:priceFmt, startTs:performance.now() };
+    const items=[]; const t=Date.now();
+    for(const pr of prices){
+      const horasDec=pr.price/vh;
+      const durFmt=formatDuration(horasDec);
+      const priceFmt=formatBRL(pr.price);
+      // amostra a cor da região da própria linha (com leve folga vertical)
+      const pad=(pr.y1-pr.y0)*0.18;
+      const region={ x0:0, y0:pr.y0-pad, x1:outW, y1:pr.y1+pad };
+      const {bg,fg}=dominantColors(colorData, region);
+      items.push({ bg,fg, big:durFmt, small:priceFmt, yTop:pr.y0/outH, yBot:pr.y1/outH });
+      // log com dedup por valor dentro da janela
+      if(!recentlyLogged(pr.price, t)){
+        addLog({ ts:t, time:nowHM(), precoLido:pr.price, precoFmt:priceFmt,
+                 horasDecimais:horasDec, horasFmt:durFmt });
+        recentLogs.push({ val:pr.price, ts:t });
+      }
+    }
+    if(!items.length) return;
+    items.sort((a,b)=>a.yTop-b.yTop);     // de cima p/ baixo
+    resultBox={ items, startTs:performance.now() };
     resultActive=true;
     scanHint.style.opacity='0';
 
-    // log (com dedup de leitura idêntica em janela curta)
-    const t=Date.now();
-    if(!(lastLogged.val===price && (t-lastLogged.ts)<DEDUP_WINDOW_MS)){
-      addLog({ ts:t, time:nowHM(), precoLido:price, precoFmt:priceFmt,
-               horasDecimais:horasDec, horasFmt:durFmt });
-      lastLogged={val:price, ts:t};
-    }
-
-    // ao FIM do hold, no início do fade, retoma o scan em background.
+    // ao fim do HOLD (início do fade) retoma a leitura em background
     setTimeout(()=>{
-      // retoma leitura enquanto o resultado ainda esmaece
       resultActive=false;
-      consensusBuf=[];
       scanHint.style.opacity='';
     }, RESULT_HOLD_MS);
+  }
+
+  // dedup do log: já registramos este valor há menos de DEDUP_WINDOW_MS?
+  function recentlyLogged(val, t){
+    recentLogs=recentLogs.filter(r=>t-r.ts < DEDUP_WINDOW_MS);
+    return recentLogs.some(r=>r.val===val);
   }
 
   /* ════════════════════════════════════════════════════════════

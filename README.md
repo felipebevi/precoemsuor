@@ -11,10 +11,13 @@ aquele produto custa, sobreposto na tela em cima de uma mira.
 1. Na primeira vez, informe seu **salário mensal líquido** (e, opcionalmente, as horas/mês — padrão CLT = 220).
 2. Aponte a câmera traseira para a etiqueta, alinhando o preço dentro da **mira**.
 3. O app recorta **apenas a região da mira (ROI)** e roda OCR só nela, com *throttle*.
-4. Faz **consenso de 3 leituras** (≥2 iguais) para resistir a vírgulas/reflexos.
-5. Mostra o **tempo de trabalho** (`4h 12min`, `2d 3h`, `45s`...) + o preço lido, num bloco
-   com as **cores amostradas da própria etiqueta** (contraste WCAG ≥ 4.5:1 garantido).
-6. O resultado fica **8 s** e esmaece; o OCR já retoma no início do *fade*.
+4. Mostra o resultado **na primeira leitura** (sem espera). Se houver **vários preços
+   empilhados** (um embaixo do outro), lê todos e exibe **um tempo por linha**, alinhado
+   à posição real de cada preço.
+5. Cada linha mostra o **tempo de trabalho** (`4h 12min`, `2d 3h`, `45s`...) + o preço,
+   num bloco com as **cores amostradas daquela linha da etiqueta** (contraste WCAG ≥ 4.5:1).
+6. O resultado fica nítido por ~4,5 s e esmaece (~6 s no total); o OCR retoma no início do
+   *fade*. Tudo é calibrável no objeto **`CONFIG`** no topo do `<script>` em `index.html`.
 7. Botões discretos para editar o **valor base** e ver o **histórico** (exportável via
    compartilhamento nativo do celular, com *fallback* para cópia/download `.txt`).
 
