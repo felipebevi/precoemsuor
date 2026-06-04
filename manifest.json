@@ -1,0 +1,15 @@
+{
+  "name": "Preço em Suor",
+  "short_name": "Preço em Suor",
+  "description": "Aponte a câmera para uma etiqueta e veja quanto tempo de trabalho aquele preço custa. OCR 100% local.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

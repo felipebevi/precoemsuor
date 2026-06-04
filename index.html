@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<!-- viewport-fit=cover para usar a tela toda em notch/iOS; user-scalable=no para evitar zoom acidental durante o scan -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Preço em Suor">
+<title>Preço em Suor</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  /* ───────────────────────── Tema escuro, mobile-first ───────────────────────── */
+  :root{
+    --bg:#0a0a0a; --fg:#f5f5f5; --muted:#9a9a9a;
+    --accent:#16d97f; --accent-d:#0fae64;
+    --danger:#ff5a5a; --card:#161616; --border:#2a2a2a;
+    --radius:14px;
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    overscroll-behavior:none;}
+  body{overflow:hidden;}
+  button{font-family:inherit;cursor:pointer;}
+  input{font-family:inherit;}
+
+  /* Telas empilhadas; só uma .active por vez */
+  .screen{position:fixed;inset:0;display:none;flex-direction:column;}
+  .screen.active{display:flex;}
+
+  /* ───────────────────────── Onboarding / valor base ───────────────────────── */
+  #setupScreen{justify-content:center;align-items:center;padding:24px;
+    padding-top:calc(24px + var(--safe-top));}
+  .card{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:26px 22px;}
+  .logo{font-size:30px;font-weight:800;letter-spacing:-.5px;text-align:center;margin:0 0 4px;}
+  .logo .em{color:var(--accent);}
+  .tagline{color:var(--muted);text-align:center;font-size:14px;margin:0 0 22px;line-height:1.45;}
+  label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px;font-weight:600;}
+  .field{display:flex;align-items:center;gap:8px;background:#0d0d0d;border:1px solid var(--border);
+    border-radius:11px;padding:0 14px;}
+  .field .prefix{color:var(--muted);font-size:18px;font-weight:700;}
+  .field input{flex:1;background:transparent;border:0;outline:0;color:var(--fg);
+    font-size:22px;font-weight:700;padding:15px 0;min-width:0;}
+  .field input::placeholder{color:#555;font-weight:500;}
+  .row2{display:flex;gap:12px;}
+  .row2 .col{flex:1;}
+  .hint{font-size:12px;color:var(--muted);margin:7px 2px 0;line-height:1.4;}
+  .btn{display:block;width:100%;border:0;border-radius:12px;background:var(--accent);
+    color:#022a18;font-size:17px;font-weight:800;padding:16px;margin-top:22px;
+    transition:transform .08s, background .15s;}
+  .btn:active{transform:scale(.98);}
+  .btn:disabled{background:#333;color:#777;}
+  .btn.secondary{background:transparent;border:1px solid var(--border);color:var(--fg);}
+  .btn.ghost{background:transparent;color:var(--muted);box-shadow:none;font-weight:600;}
+
+  /* ───────────────────────── Câmera ───────────────────────── */
+  #camScreen{background:#000;}
+  #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;}
+  /* Canvas de overlay (mira + resultado) cobrindo a tela toda */
+  #overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+
+  /* Barra superior com botões discretos */
+  .topbar{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;
+    gap:10px;padding:calc(10px + var(--safe-top)) 14px 10px;
+    background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0));}
+  .chip{background:rgba(20,20,20,.72);border:1px solid rgba(255,255,255,.14);color:#fff;
+    border-radius:999px;padding:9px 14px;font-size:13px;font-weight:600;backdrop-filter:blur(6px);
+    display:inline-flex;align-items:center;gap:6px;}
+  .chip svg{width:15px;height:15px;}
+  .chip:active{background:rgba(40,40,40,.9);}
+
+  /* micro-indicador de consenso (3 pontinhos) na base */
+  .dots{position:absolute;left:50%;transform:translateX(-50%);z-index:5;
+    bottom:calc(26px + var(--safe-bottom));display:flex;gap:9px;opacity:0;transition:opacity .25s;}
+  .dots.show{opacity:1;}
+  .dots .d{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.28);
+    border:1px solid rgba(255,255,255,.45);transition:background .15s,transform .15s;}
+  .dots .d.on{background:var(--accent);transform:scale(1.18);}
+
+  /* dica de alinhamento */
+  .scanhint{position:absolute;left:50%;transform:translateX(-50%);z-index:5;
+    bottom:calc(64px + var(--safe-bottom));color:#fff;font-size:13px;font-weight:600;
+    background:rgba(0,0,0,.45);padding:7px 14px;border-radius:999px;backdrop-filter:blur(4px);
+    text-align:center;transition:opacity .3s;}
+
+  /* Tela de erro de câmera */
+  .camError{position:absolute;inset:0;z-index:6;display:none;flex-direction:column;
+    justify-content:center;align-items:center;text-align:center;padding:28px;background:#0a0a0a;}
+  .camError.show{display:flex;}
+  .camError h2{margin:0 0 8px;font-size:20px;}
+  .camError p{color:var(--muted);font-size:14px;line-height:1.5;max-width:340px;margin:0 0 18px;}
+
+  /* gesto inicial (iOS exige gesto p/ iniciar câmera) */
+  #startGate{position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;
+    justify-content:center;align-items:center;text-align:center;padding:28px;background:#0a0a0a;}
+  #startGate.hide{display:none;}
+  #startGate .big{font-size:64px;margin-bottom:6px;}
+
+  /* ───────────────────────── Modais ───────────────────────── */
+  .modal{position:fixed;inset:0;z-index:20;display:none;background:rgba(0,0,0,.66);
+    backdrop-filter:blur(3px);align-items:flex-end;}
+  .modal.active{display:flex;}
+  .sheet{width:100%;max-height:86vh;background:var(--card);border-top-left-radius:20px;
+    border-top-right-radius:20px;border-top:1px solid var(--border);
+    padding:18px 18px calc(20px + var(--safe-bottom));display:flex;flex-direction:column;
+    animation:rise .22s ease;}
+  @keyframes rise{from{transform:translateY(100%);}to{transform:translateY(0);}}
+  .sheet h3{margin:2px 0 14px;font-size:18px;display:flex;align-items:center;justify-content:space-between;}
+  .sheet h3 .x{background:transparent;border:0;color:var(--muted);font-size:26px;line-height:1;padding:0 4px;}
+  .logwrap{overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;position:sticky;top:0;background:var(--card);}
+  td.t{color:var(--muted);white-space:nowrap;}
+  td.p{font-weight:700;white-space:nowrap;}
+  td.h{color:var(--accent);font-weight:700;white-space:nowrap;}
+  .empty{color:var(--muted);text-align:center;padding:28px 0;font-size:14px;}
+  .toast{position:fixed;left:50%;bottom:calc(24px + var(--safe-bottom));transform:translateX(-50%);
+    z-index:40;background:#fff;color:#111;padding:12px 18px;border-radius:10px;font-weight:700;
+    font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;
+    transition:opacity .2s, transform .2s;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ TELA 1 — VALOR BASE / ONBOARDING ════════════════ -->
+<section id="setupScreen" class="screen">
+  <div class="card">
+    <h1 class="logo">Preço <span class="em">em Suor</span></h1>
+    <p class="tagline">Aponte a câmera para uma etiqueta e veja <b>quanto do seu tempo de trabalho</b> aquilo custa.</p>
+
+    <label for="salaryInput">Seu salário mensal líquido</label>
+    <div class="field">
+      <span class="prefix">R$</span>
+      <input id="salaryInput" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
+    </div>
+    <p class="hint">Fica salvo só no seu aparelho. Nada é enviado para a internet.</p>
+
+    <label for="hoursInput" style="margin-top:18px">Horas trabalhadas por mês</label>
+    <div class="field">
+      <input id="hoursInput" type="text" inputmode="decimal" autocomplete="off" placeholder="220">
+    </div>
+    <p class="hint">Padrão CLT: 220h/mês. Ajuste se trabalhar mais ou menos.</p>
+
+    <button id="startBtn" class="btn" disabled>Começar</button>
+  </div>
+</section>
+
+<!-- ════════════════ TELA 2 — CÂMERA ════════════════ -->
+<section id="camScreen" class="screen">
+  <video id="video" playsinline muted autoplay></video>
+  <canvas id="overlay"></canvas>
+
+  <div class="topbar">
+    <button class="chip" id="baseBtn" aria-label="Valor base">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Valor base
+    </button>
+    <button class="chip" id="logBtn" aria-label="Histórico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      Log
+    </button>
+  </div>
+
+  <div class="scanhint" id="scanHint">Alinhe o preço dentro da mira</div>
+  <div class="dots" id="dots"><span class="d"></span><span class="d"></span><span class="d"></span></div>
+
+  <!-- Gesto inicial obrigatório (iOS) -->
+  <div id="startGate">
+    <div class="big">📷</div>
+    <h2 style="margin:0 0 6px">Pronto para escanear</h2>
+    <p class="tagline" style="max-width:300px">Toque abaixo para ligar a câmera traseira.</p>
+    <button class="btn" id="enableCamBtn" style="max-width:280px">Ligar câmera</button>
+  </div>
+
+  <!-- Erro de câmera -->
+  <div class="camError" id="camError">
+    <h2 id="camErrTitle">Câmera indisponível</h2>
+    <p id="camErrMsg"></p>
+    <button class="btn secondary" id="retryCamBtn" style="max-width:280px">Tentar de novo</button>
+  </div>
+</section>
+
+<!-- ════════════════ MODAL — VALOR BASE (edição) ════════════════ -->
+<div class="modal" id="baseModal">
+  <div class="sheet">
+    <h3>Valor base <button class="x" data-close="baseModal">&times;</button></h3>
+    <label for="salaryInput2">Salário mensal líquido (R$)</label>
+    <div class="field"><span class="prefix">R$</span>
+      <input id="salaryInput2" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00"></div>
+    <label for="hoursInput2" style="margin-top:14px">Horas por mês</label>
+    <div class="field"><input id="hoursInput2" type="text" inputmode="decimal" autocomplete="off" placeholder="220"></div>
+    <p class="hint" id="rateHint"></p>
+    <button class="btn" id="saveBaseBtn">Salvar</button>
+  </div>
+</div>
+
+<!-- ════════════════ MODAL — LOG ════════════════ -->
+<div class="modal" id="logModal">
+  <div class="sheet">
+    <h3>Histórico <button class="x" data-close="logModal">&times;</button></h3>
+    <div class="logwrap">
+      <table id="logTable">
+        <thead><tr><th>Hora</th><th>Preço</th><th>Tempo</th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+      <div class="empty" id="logEmpty">Nenhuma leitura ainda.</div>
+    </div>
+    <div class="row2" style="margin-top:14px">
+      <button class="btn secondary col" id="exportBtn">Exportar / Compartilhar</button>
+      <button class="btn ghost col" id="clearLogBtn">Limpar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Tesseract.js via CDN (jsDelivr). Único worker persistente é criado em JS. -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   PREÇO EM SUOR — app de 1 arquivo. Vanilla JS. OCR 100% local (Tesseract.js).
+   Nenhuma imagem sai do aparelho.
+   ════════════════════════════════════════════════════════════════════════ */
+(() => {
+  'use strict';
+
+  /* ───────── Configuração / constantes ───────── */
+  const LS = { salary:'pes_salary', hours:'pes_hours', log:'pes_log' };
+  const HORAS_MES_DEFAULT = 220;          // jornada CLT padrão
+  const LOG_CAP = 200;                    // máximo de entradas no histórico
+  const OCR_INTERVAL = 700;               // throttle do loop (ms) — ~1 leitura/0,7s
+  const CONSENSUS_NEEDED = 2;             // ao menos 2 de 3 leituras iguais
+  const RESULT_HOLD_MS = 8000;            // resultado fica 8s visível
+  const RESULT_FADE_MS = 1500;            // depois esmaece em 1,5s
+  const DEDUP_WINDOW_MS = 10000;          // não loga leitura idêntica dentro de 10s
+  const MAX_PLAUSIBLE = 1000000;          // acima disso é ruído de OCR
+
+  /* ───────── Estado ───────── */
+  let salary = parseFloat(localStorage.getItem(LS.salary)) || 0;
+  let horasMes = parseFloat(localStorage.getItem(LS.hours)) || HORAS_MES_DEFAULT;
+  let logEntries = loadLog();
+
+  let stream = null;                      // MediaStream da câmera
+  let worker = null;                      // worker único do Tesseract
+  let workerReady = false;
+  let scanning = false;                   // loop de OCR ativo?
+  let ocrBusy = false;                    // já existe uma leitura em andamento?
+  let lastTick = 0;
+  let consensusBuf = [];                  // buffer das 3 coletas
+  let resultActive = false;               // exibindo resultado (pausa o scan)
+  let lastLogged = { val:null, ts:0 };    // p/ dedup
+  let rafId = null;
+
+  /* ───────── Elementos ───────── */
+  const $ = id => document.getElementById(id);
+  const setupScreen=$('setupScreen'), camScreen=$('camScreen');
+  const video=$('video'), overlay=$('overlay'), octx=overlay.getContext('2d');
+  const startGate=$('startGate'), camError=$('camError');
+  const dotsEl=$('dots'), scanHint=$('scanHint');
+
+  // canvases reutilizáveis (não recriar por frame → sem vazamento)
+  const roiCanvas = document.createElement('canvas');   // recorte colorido p/ amostra de cor
+  const roiCtx = roiCanvas.getContext('2d', { willReadFrequently:true });
+  const ocrCanvas = document.createElement('canvas');   // versão pré-processada p/ OCR
+  const ocrCtx = ocrCanvas.getContext('2d', { willReadFrequently:true });
+
+  /* ════════════════════════════════════════════════════════════
+     UTILIDADES — parse/format BR
+     ════════════════════════════════════════════════════════════ */
+
+  // Converte "1.299,90" / "29,90" / "R$29,90" / "2990" → Number
+  function parseBR(str){
+    if(str==null) return NaN;
+    let s = (''+str).replace(/[R$\s]/g,'');
+    if(!s) return NaN;
+    if(s.includes(',')){                    // vírgula é o decimal BR
+      s = s.replace(/\./g,'').replace(',', '.');
+    } else if((s.match(/\./g)||[]).length>1){ // múltiplos pontos = milhar
+      s = s.replace(/\./g,'');
+    }
+    const n = parseFloat(s);
+    return isNaN(n)?NaN:n;
+  }
+
+  function formatBRL(n){
+    return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+
+  /* Formata duração no MENOR formato possível:
+     <1min → s | <1h → min | <1dia → h+min | <semana → dias | senão semanas */
+  function formatDuration(hoursDec){
+    const totalSec = hoursDec*3600;
+    if(totalSec < 60)  return Math.max(1,Math.round(totalSec))+'s';
+    if(totalSec < 3600){                       // < 1 hora → minutos
+      const m=Math.floor(totalSec/60), s=Math.round(totalSec%60);
+      return s>0 ? `${m}min ${s}s` : `${m}min`;
+    }
+    if(hoursDec < 24){                         // < 1 dia → horas + min
+      const h=Math.floor(hoursDec), m=Math.round((hoursDec-h)*60);
+      return m>0 ? `${h}h ${m}min` : `${h}h`;
+    }
+    const days = hoursDec/24;
+    if(days < 7){                              // < 1 semana → dias + horas
+      const d=Math.floor(days), h=Math.round((days-d)*24);
+      return h>0 ? `${d}d ${h}h` : `${d}d`;
+    }
+    const weeks = days/7;                      // semanas + dias
+    const w=Math.floor(weeks), d=Math.round((weeks-w)*7);
+    return d>0 ? `${w}sem ${d}d` : `${w}sem`;
+  }
+
+  function nowHM(){
+    const d=new Date();
+    return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+  }
+
+  function valorHora(){ return horasMes>0 ? salary/horasMes : 0; }
+
+  /* ════════════════════════════════════════════════════════════
+     PARSE DE PREÇO a partir do texto do OCR
+     ════════════════════════════════════════════════════════════ */
+  function extractPrice(text){
+    if(!text) return null;
+    // normaliza espaços; mantém dígitos , . R $
+    const clean = text.replace(/[^\d.,]/g,' ').replace(/\s+/g,' ').trim();
+    // candidatos: sequências com dígitos e separadores
+    const tokens = clean.match(/\d[\d.,]*/g);
+    if(!tokens) return null;
+    let best=null;
+    for(const tk of tokens){
+      // exige um decimal plausível (preço quase sempre tem centavos: ",dd")
+      // aceita também inteiros longos como "2990" → 29,90 (heurística)
+      let val;
+      if(/[.,]\d{2}\b/.test(tk)){            // tem centavos explícitos
+        val = parseBR(tk);
+      } else if(/^\d{3,}$/.test(tk)){        // só dígitos, ≥3 → assume 2 casas decimais
+        val = parseInt(tk,10)/100;
+      } else {
+        val = parseBR(tk);
+      }
+      if(isNaN(val)||val<=0||val>MAX_PLAUSIBLE) continue;
+      // preferimos o maior valor plausível na ROI (o preço costuma ser o número dominante)
+      if(best===null || val>best) best=val;
+    }
+    return best;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     CORES — amostragem (mini k-means k=2) + contraste WCAG
+     ════════════════════════════════════════════════════════════ */
+  // Luminância relativa WCAG (sRGB → linear)
+  function relLum(r,g,b){
+    const f=c=>{c/=255; return c<=0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4);};
+    return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b);
+  }
+  function contrastRatio(c1,c2){
+    const L1=relLum(...c1), L2=relLum(...c2);
+    const hi=Math.max(L1,L2), lo=Math.min(L1,L2);
+    return (hi+0.05)/(lo+0.05);
+  }
+  function rgbCss(c){ return `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`; }
+
+  // k-means simples com k=2 sobre pixels amostrados → [corA, corB] com contagens
+  function dominantColors(imgData){
+    const d=imgData.data, n=d.length/4;
+    const step = Math.max(1, Math.floor(n/3000)); // amostra ~3000 px
+    // sementes: claro e escuro
+    let cA=[40,40,40], cB=[220,220,220];
+    for(let it=0; it<6; it++){
+      let sA=[0,0,0], nA=0, sB=[0,0,0], nB=0;
+      for(let i=0;i<n;i+=step){
+        const p=i*4, r=d[p], g=d[p+1], b=d[p+2];
+        const dA=(r-cA[0])**2+(g-cA[1])**2+(b-cA[2])**2;
+        const dB=(r-cB[0])**2+(g-cB[1])**2+(b-cB[2])**2;
+        if(dA<=dB){sA[0]+=r;sA[1]+=g;sA[2]+=b;nA++;}
+        else{sB[0]+=r;sB[1]+=g;sB[2]+=b;nB++;}
+      }
+      if(nA){cA=[sA[0]/nA,sA[1]/nA,sA[2]/nA];}
+      if(nB){cB=[sB[0]/nB,sB[1]/nB,sB[2]/nB];}
+      cA._n=nA; cB._n=nB;
+    }
+    // a cor mais frequente é o fundo; a outra é o texto
+    let bg,fg;
+    if((cA._n||0)>=(cB._n||0)){bg=cA;fg=cB;} else {bg=cB;fg=cA;}
+    bg=[bg[0],bg[1],bg[2]]; fg=[fg[0],fg[1],fg[2]];
+    // garante contraste mínimo 4.5:1 (WCAG AA)
+    if(contrastRatio(bg,fg) < 4.5){
+      const white=[255,255,255], black=[0,0,0];
+      fg = contrastRatio(bg,white) >= contrastRatio(bg,black) ? white : black;
+    }
+    return { bg, fg };
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     GEOMETRIA DA MIRA (ROI) — mapeia o alvo desenhado → pixels do vídeo
+     considerando object-fit:cover
+     ════════════════════════════════════════════════════════════ */
+  function targetRectScreen(){
+    // alvo centralizado, mais largo que alto (etiqueta). 82% da largura, razão ~2.9:1
+    const W=overlay.width, H=overlay.height;
+    const tw=Math.min(W*0.82, 560*dpr());
+    const th=tw/2.9;
+    return { x:(W-tw)/2, y:(H-th)/2, w:tw, h:th };
+  }
+  function dpr(){ return window.devicePixelRatio||1; }
+
+  // Converte retângulo de tela (canvas px) → retângulo em pixels reais do vídeo
+  function screenRectToVideo(rect){
+    const vw=video.videoWidth, vh=video.videoHeight;
+    const dw=overlay.width, dh=overlay.height;           // canvas casa com a tela (em device px)
+    if(!vw||!vh) return null;
+    const scale=Math.max(dw/vw, dh/vh);                  // object-fit:cover usa max
+    const offX=(dw - vw*scale)/2;                        // recorte horizontal (≤0)
+    const offY=(dh - vh*scale)/2;
+    return {
+      x:(rect.x-offX)/scale, y:(rect.y-offY)/scale,
+      w:rect.w/scale,        h:rect.h/scale
+    };
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     DESENHO DO OVERLAY (mira + resultado)
+     ════════════════════════════════════════════════════════════ */
+  let resultBox = null;        // {bg,fg,big,small,startTs}
+  function resizeOverlay(){
+    overlay.width = Math.round(window.innerWidth*dpr());
+    overlay.height= Math.round(window.innerHeight*dpr());
+  }
+
+  function drawTarget(rect){
+    const {x,y,w,h}=rect;
+    octx.save();
+    // escurece fora da mira
+    octx.fillStyle='rgba(0,0,0,0.35)';
+    octx.beginPath();
+    octx.rect(0,0,overlay.width,overlay.height);
+    octx.rect(x,y,w,h); // buraco
+    octx.fill('evenodd');
+    // cantos
+    const c=Math.min(w,h)*0.22, lw=Math.max(3,3*dpr());
+    octx.strokeStyle=resultActive?'rgba(22,217,127,.9)':'rgba(255,255,255,.92)';
+    octx.lineWidth=lw; octx.lineCap='round';
+    const corners=[[x,y,1,1],[x+w,y,-1,1],[x,y+h,1,-1],[x+w,y+h,-1,-1]];
+    for(const [cx,cy,sx,sy] of corners){
+      octx.beginPath();
+      octx.moveTo(cx, cy+sy*c); octx.lineTo(cx,cy); octx.lineTo(cx+sx*c, cy);
+      octx.stroke();
+    }
+    octx.restore();
+  }
+
+  function drawResult(rect){
+    if(!resultBox) return;
+    const elapsed = performance.now()-resultBox.startTs;
+    let alpha=1;
+    if(elapsed > RESULT_HOLD_MS){
+      alpha = 1 - Math.min(1,(elapsed-RESULT_HOLD_MS)/RESULT_FADE_MS);
+    }
+    if(alpha<=0){ resultBox=null; resultActive=false; return; }
+
+    const {x,y,w,h}=rect;
+    octx.save();
+    octx.globalAlpha=alpha;
+    // bloco com cores amostradas, centralizado sobre o alvo
+    const pad=14*dpr(), radius=12*dpr();
+    roundRect(x,y,w,h,radius);
+    octx.fillStyle=rgbCss(resultBox.bg);
+    octx.fill();
+
+    octx.fillStyle=rgbCss(resultBox.fg);
+    octx.textAlign='center'; octx.textBaseline='middle';
+    // tamanho grande para o tempo de trabalho
+    let big=Math.floor(h*0.42);
+    octx.font=`800 ${big}px system-ui,-apple-system,sans-serif`;
+    // encolhe a fonte se o texto não couber
+    while(octx.measureText(resultBox.big).width > w-pad*2 && big>10){
+      big-=2; octx.font=`800 ${big}px system-ui,-apple-system,sans-serif`;
+    }
+    octx.fillText(resultBox.big, x+w/2, y+h*0.40);
+    // preço original, menor
+    const small=Math.floor(h*0.20);
+    octx.font=`600 ${small}px system-ui,-apple-system,sans-serif`;
+    octx.globalAlpha=alpha*0.85;
+    octx.fillText(resultBox.small, x+w/2, y+h*0.74);
+    octx.restore();
+  }
+
+  function roundRect(x,y,w,h,r){
+    octx.beginPath();
+    octx.moveTo(x+r,y);
+    octx.arcTo(x+w,y,x+w,y+h,r);
+    octx.arcTo(x+w,y+h,x,y+h,r);
+    octx.arcTo(x,y+h,x,y,r);
+    octx.arcTo(x,y,x+w,y,r);
+    octx.closePath();
+  }
+
+  // loop de render (separado do loop de OCR)
+  function renderLoop(){
+    rafId=requestAnimationFrame(renderLoop);
+    if(camScreen.classList.contains('active')===false) return;
+    octx.clearRect(0,0,overlay.width,overlay.height);
+    const rect=targetRectScreen();
+    drawTarget(rect);
+    if(resultBox) drawResult(rect);
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     CAPTURA DA ROI + PRÉ-PROCESSAMENTO
+     ════════════════════════════════════════════════════════════ */
+  function captureROI(){
+    const rect=targetRectScreen();
+    const vrect=screenRectToVideo(rect);
+    if(!vrect||vrect.w<8||vrect.h<8) return null;
+
+    // 2x upscale p/ ajudar dígitos pequenos
+    const outW=Math.round(rect.w*2/dpr());
+    const outH=Math.round(rect.h*2/dpr());
+    roiCanvas.width=outW; roiCanvas.height=outH;
+    // recorta exatamente a área da mira do frame do vídeo
+    roiCtx.drawImage(video, vrect.x,vrect.y,vrect.w,vrect.h, 0,0,outW,outH);
+
+    // amostra de cor a partir do recorte COLORIDO (antes de binarizar)
+    let colorData;
+    try{ colorData = roiCtx.getImageData(0,0,outW,outH); }catch(e){ return null; }
+
+    // pré-processa p/ OCR: cinza + stretch de contraste (em canvas separado)
+    ocrCanvas.width=outW; ocrCanvas.height=outH;
+    const img=ocrCtx.createImageData(outW,outH);
+    const src=colorData.data, dst=img.data;
+    let mn=255,mx=0;
+    const gray=new Uint8ClampedArray(outW*outH);
+    for(let i=0,j=0;i<src.length;i+=4,j++){
+      const y=(src[i]*0.299+src[i+1]*0.587+src[i+2]*0.114)|0;
+      gray[j]=y; if(y<mn)mn=y; if(y>mx)mx=y;
+    }
+    const range=Math.max(1,mx-mn);
+    for(let j=0,i=0;j<gray.length;j++,i+=4){
+      let v=( (gray[j]-mn)*255/range )|0;       // stretch linear de contraste
+      dst[i]=dst[i+1]=dst[i+2]=v; dst[i+3]=255;
+    }
+    ocrCtx.putImageData(img,0,0);
+    return { colorData };
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     OCR — worker único + loop de leitura
+     ════════════════════════════════════════════════════════════ */
+  async function initWorker(){
+    if(worker) return;
+    try{
+      // idioma 'eng': reconhece dígitos com alta confiabilidade e traineddata menor/rápido.
+      // (dígitos e símbolos de preço não dependem de léxico português.)
+      worker = await Tesseract.createWorker('eng', 1, {
+        // os assets (core/lang) vêm do mesmo CDN — nada da imagem é enviado
+      });
+      await worker.setParameters({
+        tessedit_char_whitelist:'0123456789R$,. ',
+        tessedit_pageseg_mode:'7'        // PSM 7: trata a ROI como uma única linha de texto
+      });
+      workerReady=true;
+    }catch(e){
+      console.error('Falha ao iniciar OCR', e);
+      showToast('Falha ao carregar OCR. Verifique a conexão.');
+    }
+  }
+
+  async function ocrTick(){
+    if(!scanning || resultActive || ocrBusy || !workerReady) return;
+    const now=performance.now();
+    if(now-lastTick < OCR_INTERVAL) return;
+    lastTick=now;
+    ocrBusy=true;
+    try{
+      const cap=captureROI();
+      if(!cap){ ocrBusy=false; return; }
+      const { data } = await worker.recognize(ocrCanvas);
+      const price = extractPrice(data.text);
+      if(price!=null){
+        consensusBuf.push(price);
+        if(consensusBuf.length>3) consensusBuf.shift();
+        updateDots(consensusBuf.length);
+        if(consensusBuf.length>=3){
+          const decided=decideConsensus(consensusBuf);
+          if(decided!=null){
+            // guarda a amostra de cor do MOMENTO da confirmação
+            confirmPrice(decided, cap.colorData);
+            consensusBuf=[]; updateDots(0);
+          } else {
+            consensusBuf.shift(); // sem consenso: desliza a janela e continua
+          }
+        }
+      } else {
+        // leitura vazia esvazia gradualmente o buffer
+        if(consensusBuf.length) { consensusBuf.shift(); updateDots(consensusBuf.length); }
+      }
+    }catch(e){
+      // ignora erros pontuais de frame
+    }finally{
+      ocrBusy=false;
+    }
+  }
+
+  // consenso: ≥2 de 3 com mesmo valor (arredondado a centavos)
+  function decideConsensus(buf){
+    const key=v=>v.toFixed(2);
+    const counts={};
+    for(const v of buf){ const k=key(v); counts[k]=(counts[k]||0)+1; }
+    let bestK=null,bestC=0;
+    for(const k in counts){ if(counts[k]>bestC){bestC=counts[k];bestK=k;} }
+    return bestC>=CONSENSUS_NEEDED ? parseFloat(bestK) : null;
+  }
+
+  function updateDots(n){
+    const ds=dotsEl.children;
+    for(let i=0;i<ds.length;i++) ds[i].classList.toggle('on', i<n);
+    dotsEl.classList.toggle('show', n>0);
+  }
+
+  function confirmPrice(price, colorData){
+    const vh=valorHora();
+    if(vh<=0){ openBase(true); return; }
+    const horasDec = price/vh;
+    const durFmt = formatDuration(horasDec);
+    const priceFmt = formatBRL(price);
+
+    // monta bloco de resultado com cores amostradas + contraste garantido
+    const {bg,fg}=dominantColors(colorData);
+    resultBox={ bg,fg, big:durFmt, small:priceFmt, startTs:performance.now() };
+    resultActive=true;
+    scanHint.style.opacity='0';
+
+    // log (com dedup de leitura idêntica em janela curta)
+    const t=Date.now();
+    if(!(lastLogged.val===price && (t-lastLogged.ts)<DEDUP_WINDOW_MS)){
+      addLog({ ts:t, time:nowHM(), precoLido:price, precoFmt:priceFmt,
+               horasDecimais:horasDec, horasFmt:durFmt });
+      lastLogged={val:price, ts:t};
+    }
+
+    // ao FIM do hold, no início do fade, retoma o scan em background.
+    setTimeout(()=>{
+      // retoma leitura enquanto o resultado ainda esmaece
+      resultActive=false;
+      consensusBuf=[];
+      scanHint.style.opacity='';
+    }, RESULT_HOLD_MS);
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     LOOP PRINCIPAL DO SCAN
+     ════════════════════════════════════════════════════════════ */
+  function scanPump(){
+    if(!scanning) return;
+    ocrTick();                       // respeita o throttle internamente
+    setTimeout(scanPump, 120);       // pump leve; ocrTick decide quando rodar
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     CÂMERA
+     ════════════════════════════════════════════════════════════ */
+  async function startCamera(){
+    camError.classList.remove('show');
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({
+        video:{ facingMode:{ ideal:'environment' },
+                width:{ ideal:1920 }, height:{ ideal:1080 } },
+        audio:false
+      });
+      video.srcObject=stream;
+      await video.play().catch(()=>{});
+      // tenta foco contínuo se suportado
+      try{
+        const track=stream.getVideoTracks()[0];
+        const caps=track.getCapabilities?track.getCapabilities():{};
+        if(caps.focusMode && caps.focusMode.includes('continuous')){
+          await track.applyConstraints({ advanced:[{ focusMode:'continuous' }] });
+        }
+      }catch(e){}
+      startGate.classList.add('hide');
+      resizeOverlay();
+      // inicia OCR e loop
+      await initWorker();
+      scanning=true; scanPump();
+    }catch(err){
+      handleCamError(err);
+    }
+  }
+
+  function handleCamError(err){
+    startGate.classList.add('hide');
+    camError.classList.add('show');
+    const t=$('camErrTitle'), m=$('camErrMsg');
+    if(err && err.name==='NotAllowedError'){
+      t.textContent='Permissão negada';
+      m.textContent='Você precisa autorizar o acesso à câmera nas configurações do navegador para usar o scanner.';
+    }else if(err && err.name==='NotFoundError'){
+      t.textContent='Câmera não encontrada';
+      m.textContent='Nenhuma câmera traseira foi detectada neste dispositivo.';
+    }else{
+      t.textContent='Câmera indisponível';
+      m.textContent='Não foi possível acessar a câmera. Verifique se o site está em HTTPS e tente novamente.';
+    }
+    console.error(err);
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     LOG / HISTÓRICO
+     ════════════════════════════════════════════════════════════ */
+  function loadLog(){
+    try{ return JSON.parse(localStorage.getItem(LS.log))||[]; }catch(e){ return []; }
+  }
+  function saveLog(){ localStorage.setItem(LS.log, JSON.stringify(logEntries)); }
+  function addLog(entry){
+    logEntries.unshift(entry);
+    if(logEntries.length>LOG_CAP) logEntries.length=LOG_CAP;
+    saveLog();
+    renderLog();
+  }
+  function renderLog(){
+    const body=$('logBody'); body.innerHTML='';
+    $('logEmpty').style.display = logEntries.length? 'none':'block';
+    for(const e of logEntries){
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class="t">${e.time}</td><td class="p">${e.precoFmt}</td><td class="h">${e.horasFmt}</td>`;
+      body.appendChild(tr);
+    }
+  }
+
+  function exportLog(){
+    if(!logEntries.length){ showToast('Nada para exportar.'); return; }
+    // texto puro, linha por linha
+    const lines = logEntries.map(e=>`${e.time} | ${e.precoFmt} | ${e.horasFmt}`);
+    const text = 'Preço em Suor — histórico\n'+lines.join('\n');
+    if(navigator.share){
+      navigator.share({ text }).catch(()=>{});
+    }else if(navigator.clipboard){
+      navigator.clipboard.writeText(text)
+        .then(()=>showToast('Copiado para a área de transferência'))
+        .catch(()=>downloadTxt(text));
+    }else{
+      downloadTxt(text);
+    }
+  }
+  function downloadTxt(text){
+    const blob=new Blob([text],{type:'text/plain'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='preco-em-suor.txt'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);   // revoga p/ não vazar
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     UI — telas, modais, toast
+     ════════════════════════════════════════════════════════════ */
+  function showScreen(el){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    el.classList.add('active');
+  }
+  function openModal(id){ $(id).classList.add('active'); }
+  function closeModal(id){ $(id).classList.remove('active'); }
+  let toastTimer=null;
+  function showToast(msg){
+    const t=$('toast'); t.textContent=msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+  }
+
+  function openBase(force){
+    $('salaryInput2').value = salary? salary.toLocaleString('pt-BR',{minimumFractionDigits:2}) : '';
+    $('hoursInput2').value = horasMes;
+    updateRateHint();
+    openModal('baseModal');
+    if(force) showToast('Informe seu salário para calcular.');
+  }
+  function updateRateHint(){
+    const s=parseBR($('salaryInput2').value), h=parseBR($('hoursInput2').value)||HORAS_MES_DEFAULT;
+    if(s>0 && h>0){
+      $('rateHint').textContent=`Valor da sua hora: ${formatBRL(s/h)}`;
+    }else{ $('rateHint').textContent=''; }
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     BOOTSTRAP / EVENTOS
+     ════════════════════════════════════════════════════════════ */
+  function validateSetup(){
+    const s=parseBR($('salaryInput').value);
+    $('startBtn').disabled = !(s>0);
+  }
+
+  function goToCamera(){
+    showScreen(camScreen);
+    resizeOverlay();
+    if(!rafId) renderLoop();
+    // câmera só inicia após gesto (botão "Ligar câmera") — exigência iOS
+  }
+
+  function init(){
+    // pré-preenche se já houver salário
+    if(salary>0) $('salaryInput').value = salary.toLocaleString('pt-BR',{minimumFractionDigits:2});
+    $('hoursInput').value = horasMes;
+    renderLog();
+
+    // máscara/parse leve nos inputs
+    $('salaryInput').addEventListener('input', validateSetup);
+    validateSetup();
+
+    $('startBtn').addEventListener('click', ()=>{
+      salary=parseBR($('salaryInput').value);
+      horasMes=parseBR($('hoursInput').value)||HORAS_MES_DEFAULT;
+      if(!(salary>0)) return;
+      localStorage.setItem(LS.salary, salary);
+      localStorage.setItem(LS.hours, horasMes);
+      goToCamera();
+    });
+
+    $('enableCamBtn').addEventListener('click', startCamera);
+    $('retryCamBtn').addEventListener('click', startCamera);
+
+    $('baseBtn').addEventListener('click', ()=>openBase(false));
+    $('logBtn').addEventListener('click', ()=>{ renderLog(); openModal('logModal'); });
+
+    ['salaryInput2','hoursInput2'].forEach(id=>$(id).addEventListener('input', updateRateHint));
+    $('saveBaseBtn').addEventListener('click', ()=>{
+      const s=parseBR($('salaryInput2').value), h=parseBR($('hoursInput2').value)||HORAS_MES_DEFAULT;
+      if(!(s>0)){ showToast('Informe um salário válido.'); return; }
+      salary=s; horasMes=h;
+      localStorage.setItem(LS.salary, salary);
+      localStorage.setItem(LS.hours, horasMes);
+      closeModal('baseModal');
+      showToast('Valor base atualizado.');
+    });
+
+    $('exportBtn').addEventListener('click', exportLog);
+    $('clearLogBtn').addEventListener('click', ()=>{
+      if(!logEntries.length) return;
+      logEntries=[]; saveLog(); renderLog(); showToast('Histórico limpo.');
+    });
+
+    document.querySelectorAll('[data-close]').forEach(b=>
+      b.addEventListener('click', ()=>closeModal(b.dataset.close)));
+    document.querySelectorAll('.modal').forEach(m=>
+      m.addEventListener('click', e=>{ if(e.target===m) closeModal(m.id); }));
+
+    // recalcula overlay/ROI em rotação/resize
+    window.addEventListener('resize', ()=>{ if(camScreen.classList.contains('active')) resizeOverlay(); });
+    window.addEventListener('orientationchange', ()=>setTimeout(resizeOverlay,300));
+
+    // decide tela inicial
+    if(salary>0){ goToCamera(); } else { showScreen(setupScreen); }
+  }
+
+  // registra service worker (opcional, p/ instalável/offline) — falha silenciosa
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>

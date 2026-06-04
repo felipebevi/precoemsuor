@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#0a0a0a"/>
+  <!-- mira -->
+  <g fill="none" stroke="#16d97f" stroke-width="22" stroke-linecap="round">
+    <path d="M118 168v-30a20 20 0 0 1 20-20h30"/>
+    <path d="M394 168v-30a20 20 0 0 0-20-20h-30"/>
+    <path d="M118 344v30a20 20 0 0 0 20 20h30"/>
+    <path d="M394 344v30a20 20 0 0 1-20 20h-30"/>
+  </g>
+  <!-- gota de suor -->
+  <path d="M256 196c34 44 56 74 56 104a56 56 0 0 1-112 0c0-30 22-60 56-104z" fill="#16d97f"/>
+  <!-- cifrão dentro da gota -->
+  <text x="256" y="332" font-family="system-ui,Arial,sans-serif" font-size="92" font-weight="800"
+        fill="#022a18" text-anchor="middle">$</text>
+</svg>

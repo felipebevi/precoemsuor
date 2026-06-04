@@ -1,0 +1,44 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: precoemsuor-web
+    container_name: precoemsuor-web
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+
+      # ── HTTPS — precoemsuor.9ideias.com.br ──────────────────────────
+      - "traefik.http.routers.precoemsuor.rule=Host(`precoemsuor.9ideias.com.br`)"
+      - "traefik.http.routers.precoemsuor.entrypoints=websecure"
+      - "traefik.http.routers.precoemsuor.tls=true"
+      - "traefik.http.routers.precoemsuor.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.precoemsuor.service=precoemsuor"
+      - "traefik.http.routers.precoemsuor.middlewares=precoemsuor-headers@docker"
+
+      # ── HTTP → HTTPS ────────────────────────────────────────────────
+      - "traefik.http.routers.precoemsuor-http.rule=Host(`precoemsuor.9ideias.com.br`)"
+      - "traefik.http.routers.precoemsuor-http.entrypoints=web"
+      - "traefik.http.routers.precoemsuor-http.middlewares=precoemsuor-https-redirect@docker"
+      - "traefik.http.middlewares.precoemsuor-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.precoemsuor-https-redirect.redirectscheme.permanent=true"
+
+      # ── Headers de segurança ────────────────────────────────────────
+      # Permissions-Policy libera a câmera só p/ a própria origem (PWA precisa).
+      - "traefik.http.middlewares.precoemsuor-headers.headers.customResponseHeaders.X-Frame-Options=SAMEORIGIN"
+      - "traefik.http.middlewares.precoemsuor-headers.headers.customResponseHeaders.X-Content-Type-Options=nosniff"
+      - "traefik.http.middlewares.precoemsuor-headers.headers.customResponseHeaders.Referrer-Policy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.precoemsuor-headers.headers.customResponseHeaders.Permissions-Policy=camera=(self)"
+      - "traefik.http.middlewares.precoemsuor-headers.headers.STSSeconds=63072000"
+      - "traefik.http.middlewares.precoemsuor-headers.headers.STSIncludeSubdomains=true"
+
+      # Porta interna do nginx
+      - "traefik.http.services.precoemsuor.loadbalancer.server.port=80"
+
+networks:
+  traefik_net:
+    external: true
