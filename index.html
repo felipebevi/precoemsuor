@@ -337,30 +337,27 @@
   /* ════════════════════════════════════════════════════════════
      PARSE DE PREÇO a partir do texto do OCR
      ════════════════════════════════════════════════════════════ */
-  function extractPrice(text){
-    if(!text) return null;
-    // normaliza espaços; mantém dígitos , . R $
+  // Extrai TODOS os preços plausíveis de um texto (pode haver mais de um por linha).
+  function extractAllPrices(text){
+    if(!text) return [];
     const clean = text.replace(/[^\d.,]/g,' ').replace(/\s+/g,' ').trim();
-    // candidatos: sequências com dígitos e separadores
-    const tokens = clean.match(/\d[\d.,]*/g);
-    if(!tokens) return null;
-    let best=null;
+    const tokens = clean.match(/\d[\d.,]*/g) || [];
+    const vals=[];
     for(const tk of tokens){
-      // exige um decimal plausível (preço quase sempre tem centavos: ",dd")
-      // aceita também inteiros longos como "2990" → 29,90 (heurística)
-      let val;
-      if(/[.,]\d{2}\b/.test(tk)){            // tem centavos explícitos
-        val = parseBR(tk);
-      } else if(/^\d{3,}$/.test(tk)){        // só dígitos, ≥3 → assume 2 casas decimais
-        val = parseInt(tk,10)/100;
-      } else {
-        val = parseBR(tk);
-      }
-      if(isNaN(val)||val<=0||val>MAX_PLAUSIBLE) continue;
-      // preferimos o maior valor plausível na ROI (o preço costuma ser o número dominante)
-      if(best===null || val>best) best=val;
+      let val=null;
+      if(/[.,]\d{2}(?!\d)/.test(tk))           val=parseBR(tk);                        // tem centavos (,dd)
+      else if(/^\d{1,3}(\.\d{3})+$/.test(tk))  val=parseInt(tk.replace(/\./g,''),10);  // milhar sem centavos: 1.299
+      else if(/^\d{3,}$/.test(tk))             val=parseInt(tk,10)/100;                // inteiro longo → 2 casas (2990→29,90)
+      else continue;                                                                   // ignora inteiros curtos (ruído)
+      if(val==null||isNaN(val)||val<=0||val>MAX_PLAUSIBLE) continue;
+      vals.push(val);
     }
-    return best;
+    return vals;
+  }
+  // Conveniência: o maior preço plausível de um trecho (ex.: 1 palavra/linha).
+  function extractPrice(text){
+    const vals=extractAllPrices(text);
+    return vals.length ? Math.max(...vals) : null;
   }
 
   /* ════════════════════════════════════════════════════════════
@@ -488,39 +485,53 @@
     octx.save();
     octx.textAlign='center'; octx.textBaseline='middle';
 
-    const items=resultBox.items;          // já ordenados de cima p/ baixo
-    const minH=h*0.15, gap=2*dpr();
-    let cursor=y;                          // evita sobreposição entre bandas
+    // Cada preço vira um bloco posicionado sobre o SEU retângulo na etiqueta.
+    // Isso cobre tanto preços empilhados (y diferente) quanto lado a lado (x diferente).
+    const items=resultBox.items;
+    const single=items.length===1;
+    const showSmall=items.length<=3;       // com poucos preços, mostra também o R$
     for(const it of items){
-      // banda vertical alinhada à posição real do preço na etiqueta
-      let bh=Math.max((it.yBot-it.yTop)*h, minH);
-      let top=Math.max(y + it.yTop*h, cursor);
-      if(top+bh > y+h) top=Math.max(y, y+h-bh);
-      // bloco com a cor de fundo amostrada da própria linha da etiqueta
-      const radius=Math.min(12*dpr(), bh*0.3);
-      roundRect(x,top,w,bh,radius);
+      // centro e tamanho do preço (em px de tela) dentro da mira
+      const pcx=x+((it.fx0+it.fx1)/2)*w;
+      const pcy=y+((it.fy0+it.fy1)/2)*h;
+      const ph=Math.max((it.fy1-it.fy0)*h, 0);
+
+      // altura do bloco: acompanha o preço, com limites legíveis
+      const bh=single ? h*0.40 : Math.min(h*0.46, Math.max(ph*1.9, h*0.18));
+      // tamanho de fonte do tempo a partir da altura do bloco
+      const fs=Math.floor(bh*(showSmall?0.44:0.6));
+      octx.font=`800 ${fs}px system-ui,-apple-system,sans-serif`;
+      let needW=octx.measureText(it.big).width;
+      if(showSmall){
+        octx.font=`600 ${Math.floor(bh*0.26)}px system-ui,-apple-system,sans-serif`;
+        needW=Math.max(needW, octx.measureText(it.small).width);
+      }
+      // largura do bloco: cabe o texto, sem estourar a mira
+      let bw=Math.min(w, needW + fs*0.8);
+      // posição centralizada no preço, presa dentro da ROI
+      const bx=Math.min(Math.max(pcx-bw/2, x), x+w-bw);
+      const by=Math.min(Math.max(pcy-bh/2, y), y+h-bh);
+
+      // bloco com a cor de fundo amostrada do próprio preço
       octx.globalAlpha=alpha;
+      roundRect(bx,by,bw,bh, Math.min(12*dpr(), bh*0.28));
       octx.fillStyle=rgbCss(it.bg);
       octx.fill();
       // texto com a cor amostrada (contraste WCAG garantido)
       octx.fillStyle=rgbCss(it.fg);
-      const innerW=w-20*dpr();
-      if(bh > h*0.30){
-        // banda alta: tempo grande em cima, preço menor embaixo
+      const innerW=bw-fs*0.5;
+      if(showSmall){
         fitFont(it.big, innerW, Math.floor(bh*0.44), '800');
         octx.globalAlpha=alpha;
-        octx.fillText(it.big, x+w/2, top+bh*0.40);
-        fitFont(it.small, innerW, Math.floor(bh*0.24), '600');
+        octx.fillText(it.big, bx+bw/2, by+bh*0.38);
+        fitFont(it.small, innerW, Math.floor(bh*0.26), '600');
         octx.globalAlpha=alpha*0.85;
-        octx.fillText(it.small, x+w/2, top+bh*0.73);
+        octx.fillText(it.small, bx+bw/2, by+bh*0.74);
       } else {
-        // banda baixa (muitos preços): tempo · preço na mesma linha
-        const inline=it.big+'   ·   '+it.small;
-        fitFont(inline, innerW, Math.floor(bh*0.5), '700');
+        fitFont(it.big, innerW, Math.floor(bh*0.6), '800');
         octx.globalAlpha=alpha;
-        octx.fillText(inline, x+w/2, top+bh*0.55);
+        octx.fillText(it.big, bx+bw/2, by+bh*0.55);
       }
-      cursor=top+bh+gap;
     }
     octx.restore();
   }
@@ -624,8 +635,9 @@
     try{
       const cap=captureROI();
       if(!cap){ ocrBusy=false; return; }
-      const { data } = await worker.recognize(ocrCanvas);
-      // SEM consenso: assim que ler, já mostra. Pode haver vários preços (1 por linha).
+      // pede a árvore estruturada (blocks/words) p/ ter o bbox de cada preço
+      const { data } = await worker.recognize(ocrCanvas, {}, { blocks:true, text:true });
+      // SEM consenso: assim que ler, já mostra. Cobre preços empilhados E lado a lado.
       let prices=pricesFromData(data, cap.outW, cap.outH);
       if(!CONFIG.MULTILINE && prices.length>1){
         prices=[prices.reduce((a,b)=>b.price>a.price?b:a)];   // só o maior
@@ -641,28 +653,59 @@
     }
   }
 
-  // extrai um preço por linha de texto do OCR, com a posição vertical (bbox) de cada
-  function pricesFromData(data, outW, outH){
+  // Reúne todas as "palavras" do OCR, seja qual for o formato da árvore (varia entre versões).
+  function collectWords(data){
+    if(!data) return [];
+    if(data.words && data.words.length) return data.words;
+    const ws=[];
+    for(const ln of (data.lines||[])) if(ln.words) ws.push(...ln.words);
+    if(ws.length) return ws;
+    for(const bl of (data.blocks||[]))
+      for(const pa of (bl.paragraphs||[]))
+        for(const ln of (pa.lines||[])) if(ln.words) ws.push(...ln.words);
+    return ws;
+  }
+
+  // remove preços duplicados muito próximos (mesmo valor + mesma posição)
+  function dedupItems(items){
     const out=[];
-    const lines=(data && data.lines) ? data.lines : null;
-    if(lines && lines.length){
-      for(const ln of lines){
-        const price=extractPrice(ln.text);
-        if(price==null) continue;
-        const bb=ln.bbox || {y0:0,y1:outH};
-        out.push({ price, y0:bb.y0, y1:bb.y1 });
-      }
+    for(const it of items){
+      const cx=(it.x0+it.x1)/2, cy=(it.y0+it.y1)/2;
+      if(out.some(o=>o.price===it.price &&
+          Math.abs((o.x0+o.x1)/2-cx)<10 && Math.abs((o.y0+o.y1)/2-cy)<10)) continue;
+      out.push(it);
     }
-    // fallback: sem bbox → distribui as linhas de texto igualmente na vertical
+    return out;
+  }
+
+  // Extrai preços com a posição (bbox) de CADA um → cobre layout vertical e horizontal.
+  function pricesFromData(data, outW, outH){
+    let out=[];
+    // 1) caminho preferido: por palavra (cada preço ganha seu retângulo x/y real)
+    for(const w of collectWords(data)){
+      const txt=w.text||'';
+      // só consideramos a palavra se ela "parece" um preço (centavos ou número grande)
+      if(!/[.,]\d{2}|\d{3,}/.test(txt)) continue;
+      const price=extractPrice(txt);
+      if(price==null) continue;
+      const b=w.bbox||{x0:0,y0:0,x1:outW,y1:outH};
+      out.push({ price, x0:b.x0, y0:b.y0, x1:b.x1, y1:b.y1 });
+    }
+    // 2) fallback por linha de texto (sem bbox): distribui em linhas e colunas
     if(!out.length && data && data.text){
       const tl=data.text.split('\n').map(s=>s.trim()).filter(Boolean);
       const n=tl.length||1;
       tl.forEach((t,i)=>{
-        const p=extractPrice(t);
-        if(p!=null) out.push({ price:p, y0:(i/n)*outH, y1:((i+1)/n)*outH });
+        const vals=extractAllPrices(t);
+        const k=vals.length||1;
+        vals.forEach((p,j)=>{
+          out.push({ price:p,
+            x0:(j/k)*outW, x1:((j+1)/k)*outW,
+            y0:(i/n)*outH, y1:((i+1)/n)*outH });
+        });
       });
     }
-    return out;
+    return dedupItems(out);
   }
 
   // confirma 1..N preços, monta os blocos de resultado e registra no log
@@ -674,11 +717,13 @@
       const horasDec=pr.price/vh;
       const durFmt=formatDuration(horasDec);
       const priceFmt=formatBRL(pr.price);
-      // amostra a cor da região da própria linha (com leve folga vertical)
-      const pad=(pr.y1-pr.y0)*0.18;
-      const region={ x0:0, y0:pr.y0-pad, x1:outW, y1:pr.y1+pad };
+      // amostra a cor da região do próprio preço (com leve folga ao redor)
+      const padX=(pr.x1-pr.x0)*0.15+4, padY=(pr.y1-pr.y0)*0.3+4;
+      const region={ x0:pr.x0-padX, y0:pr.y0-padY, x1:pr.x1+padX, y1:pr.y1+padY };
       const {bg,fg}=dominantColors(colorData, region);
-      items.push({ bg,fg, big:durFmt, small:priceFmt, yTop:pr.y0/outH, yBot:pr.y1/outH });
+      // guarda o retângulo do preço em FRAÇÕES da ROI (0..1) p/ posicionar o bloco
+      items.push({ bg,fg, big:durFmt, small:priceFmt,
+        fx0:pr.x0/outW, fy0:pr.y0/outH, fx1:pr.x1/outW, fy1:pr.y1/outH });
       // log com dedup por valor dentro da janela
       if(!recentlyLogged(pr.price, t)){
         addLog({ ts:t, time:nowHM(), precoLido:pr.price, precoFmt:priceFmt,
@@ -687,7 +732,7 @@
       }
     }
     if(!items.length) return;
-    items.sort((a,b)=>a.yTop-b.yTop);     // de cima p/ baixo
+    items.sort((a,b)=> (a.fy0-b.fy0) || (a.fx0-b.fx0));   // de cima p/ baixo, depois esq→dir
     resultBox={ items, startTs:performance.now() };
     resultActive=true;
     scanHint.style.opacity='0';

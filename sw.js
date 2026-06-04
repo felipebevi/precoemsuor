@@ -1,6 +1,9 @@
-/* Service worker mínimo: cache dos assets estáticos + lib de OCR (uso offline).
-   Mantido simples de propósito — não é crítico para o MVP. */
-const CACHE = 'preco-em-suor-v1';
+/* Service worker — cache dos assets + lib de OCR (offline), mas SEM travar updates.
+   Estratégia:
+   - HTML/navegação  → NETWORK-FIRST (sempre pega a versão nova do app; cai no cache se offline)
+   - demais assets   → STALE-WHILE-REVALIDATE (rápido e atualiza em background)
+   Bump CACHE a cada release para limpar versões antigas. */
+const CACHE = 'preco-em-suor-v3';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -9,25 +12,46 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', e => {
-  const url = e.request.url;
-  // cacheia também os assets do Tesseract servidos pelo jsDelivr (OCR offline)
-  const cacheable = ASSETS.some(a => url.endsWith(a.replace('./', '/'))) || url.includes('cdn.jsdelivr.net/npm/tesseract');
-  e.respondWith(
-    caches.match(e.request).then(hit => {
-      if (hit) return hit;
-      return fetch(e.request).then(res => {
-        if (cacheable && res.ok) {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  const isHTML = req.mode === 'navigate' || req.destination === 'document' ||
+                 url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
+
+  if (isHTML) {
+    // NETWORK-FIRST: garante que o usuário sempre receba o app mais recente.
+    e.respondWith(
+      fetch(req)
+        .then(res => {
           const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+          caches.open(CACHE).then(c => c.put('./index.html', copy)).catch(() => {});
+          return res;
+        })
+        .catch(() => caches.match('./index.html').then(r => r || caches.match('./')))
+    );
+    return;
+  }
+
+  // Demais assets (inclui Tesseract no jsDelivr): stale-while-revalidate.
+  const cacheable = url.origin === location.origin ||
+                    url.href.includes('cdn.jsdelivr.net/npm/tesseract');
+  e.respondWith(
+    caches.match(req).then(hit => {
+      const net = fetch(req).then(res => {
+        if (cacheable && res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
         }
         return res;
       }).catch(() => hit);
+      return hit || net;
     })
   );
 });
