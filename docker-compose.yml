@@ -16,7 +16,27 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
 
-      # ── HTTPS — precoemsuor.9ideias.com.br ──────────────────────────
+      # ── HTTPS apex — precoemsuor.com.br (DNS direto → Let's Encrypt) ────
+      - "traefik.http.routers.precoemsuor-apex.rule=Host(`precoemsuor.com.br`)"
+      - "traefik.http.routers.precoemsuor-apex.entrypoints=websecure"
+      - "traefik.http.routers.precoemsuor-apex.tls=true"
+      - "traefik.http.routers.precoemsuor-apex.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.precoemsuor-apex.service=precoemsuor"
+      - "traefik.http.routers.precoemsuor-apex.middlewares=precoemsuor-headers@docker"
+
+      # ── HTTPS www.precoemsuor.com.br (atrás do Cloudflare; CF SSL Full)─
+      # Cloudflare termina o TLS na borda. Aqui no origin basta TLS habilitado;
+      # o cert padrão do Traefik atende, sem precisar de Let's Encrypt para o www.
+      - "traefik.http.routers.precoemsuor-www.rule=Host(`www.precoemsuor.com.br`)"
+      - "traefik.http.routers.precoemsuor-www.entrypoints=websecure"
+      - "traefik.http.routers.precoemsuor-www.tls=true"
+      - "traefik.http.routers.precoemsuor-www.service=precoemsuor"
+      - "traefik.http.routers.precoemsuor-www.middlewares=precoemsuor-www-redirect@docker"
+      - "traefik.http.middlewares.precoemsuor-www-redirect.redirectregex.regex=^https://www\\.precoemsuor\\.com\\.br/(.*)"
+      - "traefik.http.middlewares.precoemsuor-www-redirect.redirectregex.replacement=https://precoemsuor.com.br/$${1}"
+      - "traefik.http.middlewares.precoemsuor-www-redirect.redirectregex.permanent=true"
+
+      # ── HTTPS legado — precoemsuor.9ideias.com.br ───────────────────────
       - "traefik.http.routers.precoemsuor.rule=Host(`precoemsuor.9ideias.com.br`)"
       - "traefik.http.routers.precoemsuor.entrypoints=websecure"
       - "traefik.http.routers.precoemsuor.tls=true"
@@ -24,8 +44,8 @@ services:
       - "traefik.http.routers.precoemsuor.service=precoemsuor"
       - "traefik.http.routers.precoemsuor.middlewares=precoemsuor-headers@docker"
 
-      # ── HTTP → HTTPS ────────────────────────────────────────────────
-      - "traefik.http.routers.precoemsuor-http.rule=Host(`precoemsuor.9ideias.com.br`)"
+      # ── HTTP → HTTPS (todos os hosts) ───────────────────────────────────
+      - "traefik.http.routers.precoemsuor-http.rule=Host(`precoemsuor.com.br`) || Host(`www.precoemsuor.com.br`) || Host(`precoemsuor.9ideias.com.br`)"
       - "traefik.http.routers.precoemsuor-http.entrypoints=web"
       - "traefik.http.routers.precoemsuor-http.middlewares=precoemsuor-https-redirect@docker"
       - "traefik.http.middlewares.precoemsuor-https-redirect.redirectscheme.scheme=https"
