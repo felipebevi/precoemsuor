@@ -196,7 +196,7 @@
     </button>
   </div>
 
-  <div class="scanhint" id="scanHint">Alinhe o preço dentro da mira</div>
+  <div class="scanhint" id="scanHint">Alinhe o preço na mira · toque para reler</div>
 
   <!-- Gesto inicial obrigatório (iOS) -->
   <div id="startGate">
@@ -816,7 +816,7 @@
     }
     if(!items.length) return;
     items.sort((a,b)=> (a.fy0-b.fy0) || (a.fx0-b.fx0));   // de cima p/ baixo, depois esq→dir
-    resultBox={ items, startTs:performance.now() };
+    resultBox={ items, startTs:performance.now(), loggedTs:t };  // loggedTs p/ desfazer no toque
     resultActive=true;
     scanHint.style.opacity='0';
 
@@ -831,6 +831,20 @@
   function recentlyLogged(val, t){
     recentLogs=recentLogs.filter(r=>t-r.ts < DEDUP_WINDOW_MS);
     return recentLogs.some(r=>r.val===val);
+  }
+
+  // Toque na tela/preço: descarta a leitura atual e reinicia o scan (caso tenha lido errado).
+  function clearCurrentResult(fromTap){
+    if(resultBox && fromTap && resultBox.loggedTs){
+      const ts=resultBox.loggedTs;
+      const before=logEntries.length;
+      logEntries=logEntries.filter(e=>e.ts!==ts);     // remove o que foi logado nesta leitura
+      if(logEntries.length!==before){ saveLog(); renderLog(); }
+      recentLogs=recentLogs.filter(r=>r.ts!==ts);      // libera reler o mesmo valor imediatamente
+    }
+    resultBox=null;
+    resultActive=false;                                // retoma o loop de OCR na hora
+    scanHint.style.opacity='';
   }
 
   /* ════════════════════════════════════════════════════════════
@@ -1088,6 +1102,12 @@
 
     $('enableCamBtn').addEventListener('click', startCamera);
     $('retryCamBtn').addEventListener('click', startCamera);
+
+    // toque na tela (fora dos botões) descarta a leitura atual e reinicia o scan
+    camScreen.addEventListener('click', e=>{
+      if(e.target.closest('.topbar') || e.target.closest('#startGate') || e.target.closest('.camError')) return;
+      if(resultBox){ clearCurrentResult(true); showToast('Leitura descartada — lendo de novo'); }
+    });
 
     $('baseBtn').addEventListener('click', ()=>openBase(false));
     $('logBtn').addEventListener('click', ()=>{ renderLog(); openModal('logModal'); });
