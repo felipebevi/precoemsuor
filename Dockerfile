@@ -4,8 +4,8 @@ FROM nginx:alpine
 # Configuração do servidor
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Arquivos estáticos do PWA
-COPY index.html manifest.json icon.svg sw.js /usr/share/nginx/html/
+# Arquivos estáticos do PWA (economias.json é a versão inicial; o cron atualiza via volume)
+COPY index.html manifest.json icon.svg sw.js economias.json /usr/share/nginx/html/
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

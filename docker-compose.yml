@@ -6,6 +6,10 @@ services:
     image: precoemsuor-web
     container_name: precoemsuor-web
     restart: unless-stopped
+    # monta o economias.json do host (atualizado pelo cron via update-rates.sh)
+    # por cima do que veio na imagem, para refletir as cotações sem rebuild.
+    volumes:
+      - ./economias.json:/usr/share/nginx/html/economias.json:ro
     networks:
       - traefik_net
     labels:

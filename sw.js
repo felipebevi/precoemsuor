@@ -3,8 +3,8 @@
    - HTML/navegação  → NETWORK-FIRST (sempre pega a versão nova do app; cai no cache se offline)
    - demais assets   → STALE-WHILE-REVALIDATE (rápido e atualiza em background)
    Bump CACHE a cada release para limpar versões antigas. */
-const CACHE = 'preco-em-suor-v3';
-const ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
+const CACHE = 'preco-em-suor-v4';
+const ASSETS = ['./', './index.html', './manifest.json', './icon.svg', './economias.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -24,17 +24,20 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   const isHTML = req.mode === 'navigate' || req.destination === 'document' ||
                  url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
+  // economias.json é atualizado pelo cron → também queremos sempre o mais novo
+  const isRates = url.pathname.endsWith('/economias.json');
 
-  if (isHTML) {
-    // NETWORK-FIRST: garante que o usuário sempre receba o app mais recente.
+  if (isHTML || isRates) {
+    // NETWORK-FIRST: sempre tenta a versão mais recente; cai no cache se offline.
+    const key = isHTML ? './index.html' : './economias.json';
     e.respondWith(
       fetch(req)
         .then(res => {
           const copy = res.clone();
-          caches.open(CACHE).then(c => c.put('./index.html', copy)).catch(() => {});
+          caches.open(CACHE).then(c => c.put(key, copy)).catch(() => {});
           return res;
         })
-        .catch(() => caches.match('./index.html').then(r => r || caches.match('./')))
+        .catch(() => caches.match(key).then(r => r || (isHTML ? caches.match('./') : r)))
     );
     return;
   }

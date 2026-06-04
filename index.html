@@ -59,6 +59,20 @@
   .btn.secondary{background:transparent;border:1px solid var(--border);color:var(--fg);}
   .btn.ghost{background:transparent;color:var(--muted);box-shadow:none;font-weight:600;}
 
+  /* Seletor segmentado: "Meu salário" | "Salário mínimo de um país" */
+  .seg{display:flex;background:#0d0d0d;border:1px solid var(--border);border-radius:11px;
+    padding:4px;gap:4px;margin:6px 0 4px;}
+  .seg-btn{flex:1;background:transparent;border:0;color:var(--muted);font-size:12.5px;
+    font-weight:700;padding:11px 6px;border-radius:8px;line-height:1.15;}
+  .seg-btn.active{background:var(--accent);color:#022a18;}
+  /* select de país (com bandeira) */
+  .field.sel{position:relative;}
+  .field.sel::after{content:'▾';position:absolute;right:14px;top:50%;transform:translateY(-50%);
+    color:var(--muted);pointer-events:none;font-size:14px;}
+  .field select{flex:1;appearance:none;-webkit-appearance:none;background:transparent;border:0;
+    outline:0;color:var(--fg);font-size:18px;font-weight:700;padding:15px 22px 15px 0;min-width:0;}
+  .field select option{background:#161616;color:var(--fg);}
+
   /* ───────────────────────── Câmera ───────────────────────── */
   #camScreen{background:#000;}
   #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;}
@@ -136,12 +150,25 @@
     <h1 class="logo">Preço <span class="em">em Suor</span></h1>
     <p class="tagline">Aponte a câmera para uma etiqueta e veja <b>quanto do seu tempo de trabalho</b> aquilo custa.</p>
 
-    <label for="salaryInput">Seu salário mensal líquido</label>
-    <div class="field">
-      <span class="prefix">R$</span>
-      <input id="salaryInput" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
+    <div class="seg" id="setupSeg">
+      <button type="button" class="seg-btn active" data-mode="custom">Meu salário</button>
+      <button type="button" class="seg-btn" data-mode="country">Salário mínimo de um país</button>
     </div>
-    <p class="hint">Fica salvo só no seu aparelho. Nada é enviado para a internet.</p>
+
+    <div id="customBox">
+      <label for="salaryInput">Seu salário mensal líquido</label>
+      <div class="field">
+        <span class="prefix">R$</span>
+        <input id="salaryInput" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
+      </div>
+      <p class="hint">Fica salvo só no seu aparelho. Nada é enviado para a internet.</p>
+    </div>
+
+    <div id="countryBox" style="display:none">
+      <label for="countrySelect">País — salário mínimo mensal</label>
+      <div class="field sel"><select id="countrySelect"></select></div>
+      <p class="hint" id="countryHint"></p>
+    </div>
 
     <label for="hoursInput" style="margin-top:18px">Horas trabalhadas por mês</label>
     <div class="field">
@@ -161,7 +188,7 @@
   <div class="topbar">
     <button class="chip" id="baseBtn" aria-label="Valor base">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      Valor base
+      <span id="baseBtnLabel">Valor base</span>
     </button>
     <button class="chip" id="logBtn" aria-label="Histórico">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
@@ -191,9 +218,19 @@
 <div class="modal" id="baseModal">
   <div class="sheet">
     <h3>Valor base <button class="x" data-close="baseModal">&times;</button></h3>
-    <label for="salaryInput2">Salário mensal líquido (R$)</label>
-    <div class="field"><span class="prefix">R$</span>
-      <input id="salaryInput2" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00"></div>
+    <div class="seg" id="baseSeg">
+      <button type="button" class="seg-btn active" data-mode="custom">Meu salário</button>
+      <button type="button" class="seg-btn" data-mode="country">Salário mínimo de um país</button>
+    </div>
+    <div id="customBox2">
+      <label for="salaryInput2">Salário mensal líquido (R$)</label>
+      <div class="field"><span class="prefix">R$</span>
+        <input id="salaryInput2" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00"></div>
+    </div>
+    <div id="countryBox2" style="display:none">
+      <label for="countrySelect2">País — salário mínimo mensal</label>
+      <div class="field sel"><select id="countrySelect2"></select></div>
+    </div>
     <label for="hoursInput2" style="margin-top:14px">Horas por mês</label>
     <div class="field"><input id="hoursInput2" type="text" inputmode="decimal" autocomplete="off" placeholder="220"></div>
     <p class="hint" id="rateHint"></p>
@@ -245,7 +282,7 @@
     MAX_PLAUSIBLE     : 1000000 // acima disso é ruído de OCR
   };
   /* ╚═════════════════════════════════════════════════════════════╝ */
-  const LS = { salary:'pes_salary', hours:'pes_hours', log:'pes_log' };
+  const LS = { salary:'pes_salary', hours:'pes_hours', log:'pes_log', mode:'pes_mode', country:'pes_country' };
   const HORAS_MES_DEFAULT = CONFIG.HORAS_MES_DEFAULT;
   const LOG_CAP           = CONFIG.LOG_CAP;
   const OCR_INTERVAL      = CONFIG.OCR_INTERVAL;
@@ -258,6 +295,35 @@
   let salary = parseFloat(localStorage.getItem(LS.salary)) || 0;
   let horasMes = parseFloat(localStorage.getItem(LS.hours)) || HORAS_MES_DEFAULT;
   let logEntries = loadLog();
+  // base = 'custom' (salário próprio) ou 'country' (salário mínimo de um país)
+  let baseMode = localStorage.getItem(LS.mode) || 'custom';
+  let countryCode = localStorage.getItem(LS.country) || 'BR';
+  let economias = null;     // dados de países (economias.json ou fallback)
+
+  // Fallback embutido: garante o modo "país" mesmo se economias.json falhar ao carregar.
+  // O arquivo economias.json (atualizado pelo cron) tem precedência quando disponível.
+  const ECONOMIAS_FALLBACK = {"moedaBase":"BRL","paises":[
+    {"codigo":"BR","nome":"Brasil","bandeira":"🇧🇷","moeda":"BRL","simbolo":"R$","salarioMinimoMensal":1518,"cotacaoBRL":1.0},
+    {"codigo":"US","nome":"Estados Unidos","bandeira":"🇺🇸","moeda":"USD","simbolo":"US$","salarioMinimoMensal":1257,"cotacaoBRL":5.40},
+    {"codigo":"CN","nome":"China","bandeira":"🇨🇳","moeda":"CNY","simbolo":"¥","salarioMinimoMensal":2690,"cotacaoBRL":0.75},
+    {"codigo":"DE","nome":"Alemanha","bandeira":"🇩🇪","moeda":"EUR","simbolo":"€","salarioMinimoMensal":2222,"cotacaoBRL":6.10},
+    {"codigo":"JP","nome":"Japão","bandeira":"🇯🇵","moeda":"JPY","simbolo":"¥","salarioMinimoMensal":183000,"cotacaoBRL":0.037},
+    {"codigo":"IN","nome":"Índia","bandeira":"🇮🇳","moeda":"INR","simbolo":"₹","salarioMinimoMensal":9750,"cotacaoBRL":0.064},
+    {"codigo":"GB","nome":"Reino Unido","bandeira":"🇬🇧","moeda":"GBP","simbolo":"£","salarioMinimoMensal":2117,"cotacaoBRL":7.10},
+    {"codigo":"FR","nome":"França","bandeira":"🇫🇷","moeda":"EUR","simbolo":"€","salarioMinimoMensal":1802,"cotacaoBRL":6.10},
+    {"codigo":"IT","nome":"Itália","bandeira":"🇮🇹","moeda":"EUR","simbolo":"€","salarioMinimoMensal":1300,"cotacaoBRL":6.10},
+    {"codigo":"CA","nome":"Canadá","bandeira":"🇨🇦","moeda":"CAD","simbolo":"C$","salarioMinimoMensal":2998,"cotacaoBRL":3.95},
+    {"codigo":"RU","nome":"Rússia","bandeira":"🇷🇺","moeda":"RUB","simbolo":"₽","salarioMinimoMensal":22440,"cotacaoBRL":0.068},
+    {"codigo":"MX","nome":"México","bandeira":"🇲🇽","moeda":"MXN","simbolo":"MX$","salarioMinimoMensal":8476,"cotacaoBRL":0.29},
+    {"codigo":"AU","nome":"Austrália","bandeira":"🇦🇺","moeda":"AUD","simbolo":"A$","salarioMinimoMensal":3966,"cotacaoBRL":3.60},
+    {"codigo":"KR","nome":"Coreia do Sul","bandeira":"🇰🇷","moeda":"KRW","simbolo":"₩","salarioMinimoMensal":2096270,"cotacaoBRL":0.0040},
+    {"codigo":"ES","nome":"Espanha","bandeira":"🇪🇸","moeda":"EUR","simbolo":"€","salarioMinimoMensal":1184,"cotacaoBRL":6.10},
+    {"codigo":"ID","nome":"Indonésia","bandeira":"🇮🇩","moeda":"IDR","simbolo":"Rp","salarioMinimoMensal":5067381,"cotacaoBRL":0.00033},
+    {"codigo":"NL","nome":"Países Baixos","bandeira":"🇳🇱","moeda":"EUR","simbolo":"€","salarioMinimoMensal":2335,"cotacaoBRL":6.10},
+    {"codigo":"TR","nome":"Turquia","bandeira":"🇹🇷","moeda":"TRY","simbolo":"₺","salarioMinimoMensal":26005,"cotacaoBRL":0.14},
+    {"codigo":"SA","nome":"Arábia Saudita","bandeira":"🇸🇦","moeda":"SAR","simbolo":"﷼","salarioMinimoMensal":4000,"cotacaoBRL":1.44},
+    {"codigo":"CH","nome":"Suíça","bandeira":"🇨🇭","moeda":"CHF","simbolo":"CHF","salarioMinimoMensal":4426,"cotacaoBRL":6.70}
+  ]};
 
   let stream = null;                      // MediaStream da câmera
   let worker = null;                      // worker único do Tesseract
@@ -332,7 +398,24 @@
     return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
   }
 
-  function valorHora(){ return horasMes>0 ? salary/horasMes : 0; }
+  // país atualmente selecionado (no modo "country")
+  function paisAtual(){ return economias ? economias.paises.find(p=>p.codigo===countryCode) : null; }
+
+  // salário mensal convertido para BRL (próprio, ou mínimo do país × cotação)
+  function salarioMensalBRL(){
+    if(baseMode==='country'){
+      const p=paisAtual();
+      return (p && p.cotacaoBRL>0) ? p.salarioMinimoMensal*p.cotacaoBRL : 0;
+    }
+    return salary>0 ? salary : 0;
+  }
+  // valor da hora SEMPRE em BRL (o preço lido também é em BRL) → evidencia a diferença
+  function valorHora(){
+    const h = horasMes>0 ? horasMes : HORAS_MES_DEFAULT;
+    const s = salarioMensalBRL();
+    return s>0 ? s/h : 0;
+  }
+  function baseReady(){ return salarioMensalBRL()>0; }
 
   /* ════════════════════════════════════════════════════════════
      PARSE DE PREÇO a partir do texto do OCR
@@ -869,50 +952,137 @@
   }
 
   function openBase(force){
+    setSeg($('baseSeg'), baseMode);
+    showBaseBoxes(baseMode);
+    populateCountrySelect($('countrySelect2'));
     $('salaryInput2').value = salary? salary.toLocaleString('pt-BR',{minimumFractionDigits:2}) : '';
     $('hoursInput2').value = horasMes;
     updateRateHint();
     openModal('baseModal');
-    if(force) showToast('Informe seu salário para calcular.');
+    if(force) showToast('Defina o valor base para calcular.');
+  }
+  function showBaseBoxes(mode){
+    $('customBox2').style.display = mode==='country'?'none':'block';
+    $('countryBox2').style.display = mode==='country'?'block':'none';
   }
   function updateRateHint(){
-    const s=parseBR($('salaryInput2').value), h=parseBR($('hoursInput2').value)||HORAS_MES_DEFAULT;
-    if(s>0 && h>0){
-      $('rateHint').textContent=`Valor da sua hora: ${formatBRL(s/h)}`;
-    }else{ $('rateHint').textContent=''; }
+    const mode=segMode($('baseSeg'));
+    const h=parseBR($('hoursInput2').value)||HORAS_MES_DEFAULT;
+    let s=0, extra='';
+    if(mode==='country'){
+      const p=economias && economias.paises.find(x=>x.codigo===$('countrySelect2').value);
+      if(p){ s=p.salarioMinimoMensal*(p.cotacaoBRL||0);
+        extra=` (${p.bandeira} mín. ${p.simbolo} ${p.salarioMinimoMensal.toLocaleString('pt-BR')} ≈ R$ ${Math.round(s).toLocaleString('pt-BR')}/mês)`; }
+    } else { s=parseBR($('salaryInput2').value); }
+    $('rateHint').textContent = (s>0 && h>0) ? `Valor da hora: ${formatBRL(s/h)}${extra}` : '';
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     PAÍSES — carrega economias.json (com fallback) e popula seletores
+     ════════════════════════════════════════════════════════════ */
+  async function loadEconomias(){
+    try{
+      const r=await fetch('economias.json',{cache:'no-store'});  // sempre a versão mais nova (cron)
+      if(r.ok){ const d=await r.json(); if(d && d.paises && d.paises.length){ economias=d; return; } }
+    }catch(e){}
+    economias=ECONOMIAS_FALLBACK;     // degrada para os dados embutidos
+  }
+  function populateCountrySelect(sel){
+    if(!sel || !economias) return;
+    if(sel.options.length!==economias.paises.length){
+      sel.innerHTML='';
+      for(const p of economias.paises){
+        const o=document.createElement('option');
+        o.value=p.codigo; o.textContent=`${p.bandeira}  ${p.nome}`;
+        sel.appendChild(o);
+      }
+    }
+    sel.value=countryCode;
+  }
+  function setSeg(segEl, mode){
+    segEl.querySelectorAll('.seg-btn').forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
+  }
+  function segMode(segEl){
+    const a=segEl.querySelector('.seg-btn.active');
+    return a? a.dataset.mode : 'custom';
+  }
+  function updateCountryHint(){
+    const p=economias && economias.paises.find(x=>x.codigo===$('countrySelect').value);
+    if(!p){ $('countryHint').textContent=''; return; }
+    const h=parseBR($('hoursInput').value)||HORAS_MES_DEFAULT;
+    const brl=p.salarioMinimoMensal*(p.cotacaoBRL||0);
+    $('countryHint').textContent =
+      `Mín. ${p.simbolo} ${p.salarioMinimoMensal.toLocaleString('pt-BR')}/mês ≈ R$ ${Math.round(brl).toLocaleString('pt-BR')} • R$ ${(brl/h).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}/h`;
+  }
+  // rótulo do botão "Valor base" na câmera (mostra bandeira no modo país)
+  function updateBaseChip(){
+    const el=$('baseBtnLabel'); if(!el) return;
+    if(baseMode==='country'){ const p=paisAtual(); el.textContent = p ? p.bandeira+' '+p.nome : 'País'; }
+    else el.textContent='Valor base';
+  }
+
+  function persistBase(){
+    localStorage.setItem(LS.mode, baseMode);
+    localStorage.setItem(LS.country, countryCode);
+    localStorage.setItem(LS.salary, salary);
+    localStorage.setItem(LS.hours, horasMes);
   }
 
   /* ════════════════════════════════════════════════════════════
      BOOTSTRAP / EVENTOS
      ════════════════════════════════════════════════════════════ */
   function validateSetup(){
-    const s=parseBR($('salaryInput').value);
-    $('startBtn').disabled = !(s>0);
+    const mode=segMode($('setupSeg'));
+    const ok = mode==='country' ? !!(economias && $('countrySelect').value)
+                                 : parseBR($('salaryInput').value)>0;
+    $('startBtn').disabled = !ok;
+  }
+  function showSetupBoxes(mode){
+    $('customBox').style.display = mode==='country'?'none':'block';
+    $('countryBox').style.display = mode==='country'?'block':'none';
   }
 
   function goToCamera(){
+    updateBaseChip();
     showScreen(camScreen);
     resizeOverlay();
     if(!rafId) renderLoop();
     // câmera só inicia após gesto (botão "Ligar câmera") — exigência iOS
   }
 
-  function init(){
-    // pré-preenche se já houver salário
+  async function init(){
+    await loadEconomias();
+
+    // ----- tela de setup -----
+    populateCountrySelect($('countrySelect'));
+    setSeg($('setupSeg'), baseMode);
+    showSetupBoxes(baseMode);
     if(salary>0) $('salaryInput').value = salary.toLocaleString('pt-BR',{minimumFractionDigits:2});
     $('hoursInput').value = horasMes;
+    updateCountryHint();
     renderLog();
 
-    // máscara/parse leve nos inputs
+    $('setupSeg').querySelectorAll('.seg-btn').forEach(b=>b.addEventListener('click',()=>{
+      setSeg($('setupSeg'), b.dataset.mode); showSetupBoxes(b.dataset.mode);
+      updateCountryHint(); validateSetup();
+    }));
     $('salaryInput').addEventListener('input', validateSetup);
+    $('countrySelect').addEventListener('change', ()=>{ countryCode=$('countrySelect').value; updateCountryHint(); validateSetup(); });
+    $('hoursInput').addEventListener('input', updateCountryHint);
     validateSetup();
 
     $('startBtn').addEventListener('click', ()=>{
-      salary=parseBR($('salaryInput').value);
+      const mode=segMode($('setupSeg'));
       horasMes=parseBR($('hoursInput').value)||HORAS_MES_DEFAULT;
-      if(!(salary>0)) return;
-      localStorage.setItem(LS.salary, salary);
-      localStorage.setItem(LS.hours, horasMes);
+      if(mode==='country'){
+        countryCode=$('countrySelect').value; baseMode='country';
+        if(!baseReady()){ showToast('Selecione um país válido.'); return; }
+      } else {
+        salary=parseBR($('salaryInput').value);
+        if(!(salary>0)) return;
+        baseMode='custom';
+      }
+      persistBase();
       goToCamera();
     });
 
@@ -922,13 +1092,26 @@
     $('baseBtn').addEventListener('click', ()=>openBase(false));
     $('logBtn').addEventListener('click', ()=>{ renderLog(); openModal('logModal'); });
 
+    // ----- modal de valor base -----
+    $('baseSeg').querySelectorAll('.seg-btn').forEach(b=>b.addEventListener('click',()=>{
+      setSeg($('baseSeg'), b.dataset.mode); showBaseBoxes(b.dataset.mode); updateRateHint();
+    }));
     ['salaryInput2','hoursInput2'].forEach(id=>$(id).addEventListener('input', updateRateHint));
+    $('countrySelect2').addEventListener('change', updateRateHint);
+
     $('saveBaseBtn').addEventListener('click', ()=>{
-      const s=parseBR($('salaryInput2').value), h=parseBR($('hoursInput2').value)||HORAS_MES_DEFAULT;
-      if(!(s>0)){ showToast('Informe um salário válido.'); return; }
-      salary=s; horasMes=h;
-      localStorage.setItem(LS.salary, salary);
-      localStorage.setItem(LS.hours, horasMes);
+      const mode=segMode($('baseSeg'));
+      const h=parseBR($('hoursInput2').value)||HORAS_MES_DEFAULT;
+      if(mode==='country'){
+        countryCode=$('countrySelect2').value; baseMode='country'; horasMes=h;
+        if(!baseReady()){ showToast('Selecione um país válido.'); return; }
+      } else {
+        const s=parseBR($('salaryInput2').value);
+        if(!(s>0)){ showToast('Informe um salário válido.'); return; }
+        salary=s; baseMode='custom'; horasMes=h;
+      }
+      persistBase();
+      updateBaseChip();
       closeModal('baseModal');
       showToast('Valor base atualizado.');
     });
@@ -944,12 +1127,11 @@
     document.querySelectorAll('.modal').forEach(m=>
       m.addEventListener('click', e=>{ if(e.target===m) closeModal(m.id); }));
 
-    // recalcula overlay/ROI em rotação/resize
     window.addEventListener('resize', ()=>{ if(camScreen.classList.contains('active')) resizeOverlay(); });
     window.addEventListener('orientationchange', ()=>setTimeout(resizeOverlay,300));
 
-    // decide tela inicial
-    if(salary>0){ goToCamera(); } else { showScreen(setupScreen); }
+    // decide tela inicial: já há base válida configurada?
+    if(baseReady()){ goToCamera(); } else { showScreen(setupScreen); }
   }
 
   // registra service worker (opcional, p/ instalável/offline) — falha silenciosa
