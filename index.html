@@ -8,7 +8,87 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Preço em Suor">
-<title>Preço em Suor</title>
+
+<!-- ══════════════════════ SEO ══════════════════════ -->
+<title>Preço em Suor — Quanto do seu tempo de trabalho aquele produto custa?</title>
+<meta name="description" content="Aponte a câmera para uma etiqueta e veja, na hora, em quanto tempo do seu trabalho aquele preço se traduz. PWA grátis, OCR 100% local — nenhuma imagem sai do aparelho.">
+<meta name="keywords" content="preço em horas, valor da hora, salário mínimo, calculadora de tempo de trabalho, custo em horas, OCR de etiqueta, PWA grátis, salário em produto, comparar salário mínimo, quanto tempo trabalho para comprar">
+<meta name="author" content="Felipe Bevilaqua">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="googlebot" content="index,follow">
+<meta name="format-detection" content="telephone=no">
+<link rel="canonical" href="https://precoemsuor.com.br/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Preço em Suor">
+<meta property="og:title" content="Preço em Suor — quanto do seu tempo aquele preço custa?">
+<meta property="og:description" content="Aponte a câmera para uma etiqueta e veja, na hora, em quanto tempo do seu trabalho aquele preço se traduz. PWA grátis, OCR 100% local.">
+<meta property="og:url" content="https://precoemsuor.com.br/">
+<meta property="og:image" content="https://precoemsuor.com.br/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Preço em Suor — calculadora visual de tempo de trabalho por preço">
+<meta property="og:locale" content="pt_BR">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Preço em Suor">
+<meta name="twitter:description" content="Aponte a câmera, leia o preço, descubra em quanto tempo de trabalho aquilo se traduz.">
+<meta name="twitter:image" content="https://precoemsuor.com.br/og-image.png">
+<meta name="twitter:image:alt" content="Preço em Suor — calculadora de tempo de trabalho por preço">
+
+<!-- Schema.org JSON-LD: WebApplication -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Preço em Suor",
+  "description": "PWA que lê o preço de uma etiqueta pela câmera (OCR local) e mostra em quanto tempo do seu trabalho aquilo custa.",
+  "url": "https://precoemsuor.com.br/",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Any (PWA)",
+  "browserRequirements": "HTTPS + camera access",
+  "inLanguage": "pt-BR",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" },
+  "author": { "@type": "Person", "name": "Felipe Bevilaqua" },
+  "image": "https://precoemsuor.com.br/og-image.png",
+  "screenshot": "https://precoemsuor.com.br/og-image.png"
+}
+</script>
+
+<!-- Schema.org JSON-LD: FAQPage (gera rich snippets no Google) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Como o Preço em Suor funciona?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Você aponta a câmera do celular para a etiqueta de um produto. O OCR roda 100% local no aparelho — nenhuma foto vai para a internet. O app converte o preço em horas, dias ou semanas do seu trabalho." } },
+    { "@type": "Question", "name": "Preciso me cadastrar para usar?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Não. É gratuito, sem cadastro, sem login e sem anúncios." } },
+    { "@type": "Question", "name": "Posso instalar como app?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Sim, é um PWA. No Chrome Android: 'Adicionar à tela inicial'. No Safari iOS: compartilhar > 'Adicionar à tela inicial'." } },
+    { "@type": "Question", "name": "Quais países o app suporta no modo salário mínimo?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Brasil + 20 maiores economias do mundo: EUA, China, Alemanha, Japão, Índia, Reino Unido, França, Itália, Canadá, Rússia, México, Austrália, Coreia do Sul, Espanha, Indonésia, Países Baixos, Turquia, Arábia Saudita e Suíça." } },
+    { "@type": "Question", "name": "As cotações são atualizadas?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Sim, automaticamente todo dia às 6h via API pública gratuita de câmbio." } }
+  ]
+}
+</script>
+
+<!-- Favicons (manifest + apple-touch ficam depois do bloco GTM) -->
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+<!-- Pré-conexões: tira ~100-300ms da 1ª leitura (Tesseract CDN) -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<!-- ══════════════════════ /SEO ══════════════════════ -->
+
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -17,7 +97,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 })(window,document,'script','dataLayer','GTM-TWXJC7NS');</script>
 <!-- End Google Tag Manager -->
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.svg">
 <style>
   /* ───────────────────────── Tema escuro, mobile-first ───────────────────────── */
   :root{
@@ -28,6 +107,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     --safe-top:env(safe-area-inset-top,0px);
     --safe-bottom:env(safe-area-inset-bottom,0px);
   }
+  /* Conteúdo só para crawlers/leitores de tela — invisível para o usuário. */
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
     font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -155,6 +237,31 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TWXJC7NS"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
+
+<!-- ════════════════ SEO — conteúdo semântico para crawlers ════════════════
+     Visualmente oculto (.sr-only) mas presente no DOM. Não engana o usuário,
+     só dá contexto a buscadores e leitores de tela. -->
+<header class="sr-only">
+  <h1>Preço em Suor — Quanto do seu tempo de trabalho aquele produto custa?</h1>
+  <p>PWA gratuito que usa OCR local para ler o preço de uma etiqueta pela câmera do celular e converter, na hora, o valor em horas, dias ou semanas do seu trabalho. Nenhuma imagem sai do aparelho.</p>
+</header>
+<noscript>
+  <h1>Preço em Suor</h1>
+  <p>Calculadora visual de tempo de trabalho por preço. Este aplicativo precisa de JavaScript habilitado para funcionar.</p>
+  <p>Como usar: configure seu salário mensal líquido (ou escolha o salário mínimo de um dos 20 maiores países). Aponte a câmera do celular para a etiqueta de um produto. O app lê o preço localmente (OCR) e mostra em quanto tempo do seu trabalho aquele valor se traduz.</p>
+</noscript>
+<section class="sr-only" aria-label="Perguntas frequentes">
+  <h2>Como o Preço em Suor funciona?</h2>
+  <p>O aplicativo usa a câmera do seu celular para ler o preço da etiqueta. O reconhecimento de texto (OCR) acontece 100% no seu aparelho — nenhuma foto é enviada para a internet. Você informa seu salário mensal (ou escolhe o salário mínimo de um país), e o app calcula em quantas horas, dias ou semanas de trabalho aquele preço se traduz.</p>
+  <h2>Preciso me cadastrar?</h2>
+  <p>Não. O Preço em Suor é gratuito, sem cadastro, sem login e sem anúncios. Tudo roda no navegador.</p>
+  <h2>Posso instalar como app no celular?</h2>
+  <p>Sim. É um PWA (Progressive Web App): no Chrome Android, toque em "Adicionar à tela inicial"; no Safari iOS, toque em compartilhar e "Adicionar à tela inicial".</p>
+  <h2>Quais países e moedas o app suporta no modo "salário mínimo"?</h2>
+  <p>Brasil mais as 20 maiores economias: Estados Unidos, China, Alemanha, Japão, Índia, Reino Unido, França, Itália, Canadá, Rússia, México, Austrália, Coreia do Sul, Espanha, Indonésia, Países Baixos, Turquia, Arábia Saudita e Suíça. As cotações são atualizadas diariamente.</p>
+  <h2>Como ele lida com salários mínimos de outros países?</h2>
+  <p>Ao escolher um país, o app usa o salário mínimo local e a jornada legal típica desse país (Brasil 220h/mês, França 152h, Estados Unidos 173h, etc.) para calcular a hora em reais. Assim, se você "ganhasse o mínimo dos EUA", veria quanto tempo gastaria para comprar o mesmo produto precificado em real.</p>
+</section>
 
 <!-- ════════════════ TELA 1 — VALOR BASE / ONBOARDING ════════════════ -->
 <section id="setupScreen" class="screen">

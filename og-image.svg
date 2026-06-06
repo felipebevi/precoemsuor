@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#0a0a0a"/>
+  <!-- Mira (estilo do logo) à esquerda -->
+  <g transform="translate(80,100)" stroke="#16d97f" stroke-width="14" stroke-linecap="round" fill="none">
+    <path d="M28 110V90a16 16 0 0 1 16-16h20"/>
+    <path d="M250 110V90a16 16 0 0 0-16-16h-20"/>
+    <path d="M28 240v20a16 16 0 0 0 16 16h20"/>
+    <path d="M250 240v20a16 16 0 0 1-16 16h-20"/>
+  </g>
+  <!-- Gota de suor -->
+  <path d="M170 220c24 28 38 48 38 70a38 38 0 0 1-76 0c0-22 14-42 38-70z" fill="#16d97f"/>
+  <text x="170" y="296" font-family="system-ui,Arial,sans-serif" font-size="48" font-weight="800"
+        fill="#022a18" text-anchor="middle">$</text>
+  <!-- Texto principal -->
+  <g font-family="system-ui,-apple-system,Helvetica,Arial,sans-serif" fill="#f5f5f5">
+    <text x="380" y="200" font-size="74" font-weight="800">Preço em</text>
+    <text x="755" y="200" font-size="74" font-weight="800" fill="#16d97f">Suor</text>
+    <text x="380" y="278" font-size="36" font-weight="600" fill="#cccccc">Quanto do seu tempo de trabalho</text>
+    <text x="380" y="324" font-size="36" font-weight="600" fill="#cccccc">aquele preço custa?</text>
+    <text x="380" y="430" font-size="26" font-weight="500" fill="#9a9a9a">Aponte a câmera para a etiqueta.</text>
+    <text x="380" y="470" font-size="26" font-weight="500" fill="#9a9a9a">OCR 100% local · grátis · sem cadastro.</text>
+    <text x="380" y="558" font-size="22" font-weight="700" fill="#16d97f">precoemsuor.com.br</text>
+  </g>
+</svg>
