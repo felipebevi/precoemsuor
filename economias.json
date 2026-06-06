@@ -1,6 +1,6 @@
 {
-  "atualizadoEm": "2026-06-06T12:04:15Z",
-  "salariosRevisadosEm": "2025-06-05",
+  "atualizadoEm": "2026-06-06T15:55:06Z",
+  "salariosRevisadosEm": "2026-06-06",
   "moedaBase": "BRL",
   "observacao": "Salários mínimos mensais oficiais 2024-2025, em moeda local. cotacaoBRL = quantos reais vale 1 unidade da moeda; atualizada diariamente pelo update-rates.sh (cron). Brasil + 20 maiores economias. Salários revisados manualmente — não há API pública confiável com cobertura global.",
   "paises": [
@@ -10,9 +10,9 @@
       "bandeira": "🇧🇷",
       "moeda": "BRL",
       "simbolo": "R$",
-      "salarioMinimoMensal": 1518,
+      "salarioMinimoMensal": 1620,
       "cotacaoBRL": 1.0,
-      "obs": "R$ 1.518 (2025) · CLT 220h/mês",
+      "obs": "R$ 1.620 (2026) · INPC + produtividade · CLT 220h/mês",
       "horasMensais": 220
     },
     {
@@ -23,7 +23,7 @@
       "simbolo": "US$",
       "salarioMinimoMensal": 1257,
       "cotacaoBRL": 5.068398,
-      "obs": "Federal US$ 7,25/h × 173 · 40h/sem",
+      "obs": "Federal US$ 7,25/h × 173 (sem mudança desde 2009)",
       "horasMensais": 173
     },
     {
@@ -32,9 +32,9 @@
       "bandeira": "🇨🇳",
       "moeda": "CNY",
       "simbolo": "¥",
-      "salarioMinimoMensal": 2690,
+      "salarioMinimoMensal": 2740,
       "cotacaoBRL": 0.747272,
-      "obs": "Xangai ¥ 2.690 · 40h/sem",
+      "obs": "Xangai 2026 ¥ 2.740 · 40h/sem",
       "horasMensais": 174
     },
     {
@@ -43,9 +43,9 @@
       "bandeira": "🇩🇪",
       "moeda": "EUR",
       "simbolo": "€",
-      "salarioMinimoMensal": 2222,
+      "salarioMinimoMensal": 2405,
       "cotacaoBRL": 5.906814,
-      "obs": "€ 12,82/h × 173 · 40h/sem (2025)",
+      "obs": "Mindestlohn 2026 € 13,90/h × 173 · 40h/sem",
       "horasMensais": 173
     },
     {
@@ -54,9 +54,9 @@
       "bandeira": "🇯🇵",
       "moeda": "JPY",
       "simbolo": "¥",
-      "salarioMinimoMensal": 183000,
+      "salarioMinimoMensal": 193000,
       "cotacaoBRL": 0.031641,
-      "obs": "¥ 1.055/h × 173 (média nacional) · 40h/sem",
+      "obs": "Média nacional ¥ 1.118/h × 173 (anúncios 2026) · 40h/sem",
       "horasMensais": 173
     },
     {
@@ -67,7 +67,7 @@
       "simbolo": "₹",
       "salarioMinimoMensal": 9750,
       "cotacaoBRL": 0.0531,
-      "obs": "Mínimo federal não-qualificado · 48h/sem",
+      "obs": "Mínimo federal não-qualificado (2025, pendente 2026) · 48h/sem",
       "horasMensais": 208
     },
     {
@@ -76,9 +76,9 @@
       "bandeira": "🇬🇧",
       "moeda": "GBP",
       "simbolo": "£",
-      "salarioMinimoMensal": 2117,
+      "salarioMinimoMensal": 2199,
       "cotacaoBRL": 6.821748,
-      "obs": "National Living Wage £ 12,21/h (abr/2025)",
+      "obs": "National Living Wage £ 12,71/h (abr/2026) · 40h/sem",
       "horasMensais": 173
     },
     {
@@ -87,9 +87,9 @@
       "bandeira": "🇫🇷",
       "moeda": "EUR",
       "simbolo": "€",
-      "salarioMinimoMensal": 1802,
+      "salarioMinimoMensal": 1832,
       "cotacaoBRL": 5.906814,
-      "obs": "SMIC bruto € 11,88/h · 35h/sem (2025)",
+      "obs": "SMIC € 12,05/h (revisão 2026) · 35h/sem",
       "horasMensais": 152
     },
     {
@@ -109,9 +109,9 @@
       "bandeira": "🇨🇦",
       "moeda": "CAD",
       "simbolo": "C$",
-      "salarioMinimoMensal": 2998,
+      "salarioMinimoMensal": 3071,
       "cotacaoBRL": 3.640865,
-      "obs": "Federal C$ 17,30/h × 173 (abr/2025)",
+      "obs": "Federal C$ 17,75/h × 173 (abr/2026) · 40h/sem",
       "horasMensais": 173
     },
     {
@@ -120,9 +120,9 @@
       "bandeira": "🇷🇺",
       "moeda": "RUB",
       "simbolo": "₽",
-      "salarioMinimoMensal": 22440,
+      "salarioMinimoMensal": 27093,
       "cotacaoBRL": 0.069019,
-      "obs": "MROT 2025 · 40h/sem",
+      "obs": "MROT 2026 ₽ 27.093 · 40h/sem",
       "horasMensais": 173
     },
     {
@@ -131,9 +131,9 @@
       "bandeira": "🇲🇽",
       "moeda": "MXN",
       "simbolo": "MX$",
-      "salarioMinimoMensal": 8476,
+      "salarioMinimoMensal": 9515,
       "cotacaoBRL": 0.292946,
-      "obs": "Zona geral MX$ 278,80/dia · 48h/sem",
+      "obs": "Zona geral MX$ 313/dia (2026) · 48h/sem",
       "horasMensais": 208
     },
     {
@@ -142,9 +142,9 @@
       "bandeira": "🇦🇺",
       "moeda": "AUD",
       "simbolo": "A$",
-      "salarioMinimoMensal": 4179,
+      "salarioMinimoMensal": 4322,
       "cotacaoBRL": 3.614414,
-      "obs": "A$ 24,10/h × 165 · 38h/sem (jul/2024)",
+      "obs": "A$ 24,95/h × 165 (jul/2025 - vale 2026) · 38h/sem",
       "horasMensais": 165
     },
     {
@@ -153,9 +153,9 @@
       "bandeira": "🇰🇷",
       "moeda": "KRW",
       "simbolo": "₩",
-      "salarioMinimoMensal": 2096270,
+      "salarioMinimoMensal": 2156880,
       "cotacaoBRL": 0.003292,
-      "obs": "₩ 10.030/h × 209 · 40h/sem (2025)",
+      "obs": "₩ 10.320/h × 209 · 40h/sem (2026)",
       "horasMensais": 209
     },
     {
@@ -164,9 +164,9 @@
       "bandeira": "🇪🇸",
       "moeda": "EUR",
       "simbolo": "€",
-      "salarioMinimoMensal": 1184,
+      "salarioMinimoMensal": 1229,
       "cotacaoBRL": 5.906814,
-      "obs": "SMI 14 pagamentos/ano · 40h/sem (2025)",
+      "obs": "SMI 2026 € 17.206/14 pagamentos · 40h/sem",
       "horasMensais": 173
     },
     {
@@ -177,7 +177,7 @@
       "simbolo": "Rp",
       "salarioMinimoMensal": 5396760,
       "cotacaoBRL": 0.000281,
-      "obs": "UMP Jacarta 2025 · 40h/sem (varia por província)",
+      "obs": "UMP Jacarta 2025 (2026 a anunciar dez/2025) · 40h/sem",
       "horasMensais": 173
     },
     {
@@ -186,9 +186,9 @@
       "bandeira": "🇳🇱",
       "moeda": "EUR",
       "simbolo": "€",
-      "salarioMinimoMensal": 2436,
+      "salarioMinimoMensal": 2494,
       "cotacaoBRL": 5.906814,
-      "obs": "€ 14,06/h · 36h/sem média (2025)",
+      "obs": "€ 14,40/h (jan/2026) · 36h/sem média",
       "horasMensais": 156
     },
     {
@@ -199,7 +199,7 @@
       "simbolo": "₺",
       "salarioMinimoMensal": 26005,
       "cotacaoBRL": 0.109923,
-      "obs": "Asgari ücret bruto · 45h/sem (2025)",
+      "obs": "Asgari ücret bruto (2025; revisão 2026 anunciada jan) · 45h/sem",
       "horasMensais": 195
     },
     {
@@ -210,7 +210,7 @@
       "simbolo": "﷼",
       "salarioMinimoMensal": 4000,
       "cotacaoBRL": 1.351589,
-      "obs": "Para nacionais · 48h/sem",
+      "obs": "Para nacionais · 48h/sem (sem mudança 2026)",
       "horasMensais": 208
     },
     {

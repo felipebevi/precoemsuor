@@ -3,7 +3,7 @@
    - HTML/navegação  → NETWORK-FIRST (sempre pega a versão nova do app; cai no cache se offline)
    - demais assets   → STALE-WHILE-REVALIDATE (rápido e atualiza em background)
    Bump CACHE a cada release para limpar versões antigas. */
-const CACHE = 'preco-em-suor-v6';
+const CACHE = 'preco-em-suor-v7';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg', './economias.json'];
 
 self.addEventListener('install', e => {
