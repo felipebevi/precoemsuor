@@ -43,9 +43,15 @@ const server = http.createServer(async (req, res) => {
     return res.end();
   }
 
+  // Parser de URL para ignorar querystrings na comparação de path.
+  // (base dummy porque o WHATWG URL exige uma absoluta).
+  let u;
+  try { u = new URL(req.url, 'http://x'); } catch { return json(res, 400, { error: 'bad url' }); }
+  const pathname = u.pathname;
+
   try {
     // POST /coleta_apk — append no JSONL
-    if (req.url === '/coleta_apk' && req.method === 'POST') {
+    if (pathname === '/coleta_apk' && req.method === 'POST') {
       let body;
       try { body = await readBody(req); } catch (e) { return json(res, 413, { error: 'payload too large' }); }
       let payload;
@@ -59,23 +65,34 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, receivedAt: enriched._receivedAt });
     }
 
-    // GET /coleta_apk_coleta — devolve tudo e LIMPA (atomic rename pra evitar race)
-    if (req.url === '/coleta_apk_coleta' && req.method === 'GET') {
+    // GET /coleta_apk_coleta — devolve tudo. Por padrão, LIMPA depois (atomic rename).
+    // Se vier ?manterleituras (ou ?keep), só lê sem apagar — útil pra debug/teste.
+    if (pathname === '/coleta_apk_coleta' && req.method === 'GET') {
+      const keep = u.searchParams.has('manterleituras') || u.searchParams.has('keep');
       let coletas = [];
       if (fs.existsSync(STORE)) {
-        const tmp = STORE + '.reading-' + Date.now();
-        try { fs.renameSync(STORE, tmp); } catch (e) { /* permissão; abort */ return json(res, 500, { error: 'cannot rotate' }); }
-        const content = fs.readFileSync(tmp, 'utf8');
-        coletas = content.split('\n').filter(Boolean).map(l => {
-          try { return JSON.parse(l); } catch { return { raw: l }; }
-        });
-        try { fs.unlinkSync(tmp); } catch {}
+        if (keep) {
+          // leitura sem rename → arquivo intacto
+          const content = fs.readFileSync(STORE, 'utf8');
+          coletas = content.split('\n').filter(Boolean).map(l => {
+            try { return JSON.parse(l); } catch { return { raw: l }; }
+          });
+        } else {
+          // rename atômico → leitura → delete (evita race com POSTs simultâneos)
+          const tmp = STORE + '.reading-' + Date.now();
+          try { fs.renameSync(STORE, tmp); } catch (e) { return json(res, 500, { error: 'cannot rotate' }); }
+          const content = fs.readFileSync(tmp, 'utf8');
+          coletas = content.split('\n').filter(Boolean).map(l => {
+            try { return JSON.parse(l); } catch { return { raw: l }; }
+          });
+          try { fs.unlinkSync(tmp); } catch {}
+        }
       }
-      return json(res, 200, { count: coletas.length, coletas });
+      return json(res, 200, { count: coletas.length, kept: keep, coletas });
     }
 
     // GET /coleta_apk (healthcheck/contagem sem limpar)
-    if (req.url === '/coleta_apk' && req.method === 'GET') {
+    if (pathname === '/coleta_apk' && req.method === 'GET') {
       let count = 0;
       if (fs.existsSync(STORE)) {
         try {
