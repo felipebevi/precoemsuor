@@ -63,6 +63,34 @@ services:
       # Porta interna do nginx
       - "traefik.http.services.precoemsuor.loadbalancer.server.port=80"
 
+  # ───────────────────────────────────────────────────────────────────
+  # Micro-serviço de coleta do APK de placas de combustível.
+  # POST /coleta_apk            — adiciona ao JSONL local
+  # GET  /coleta_apk_coleta     — devolve tudo + limpa
+  # GET  /coleta_apk            — healthcheck (sem limpar)
+  # Mesmo host precoemsuor.com.br, paths interceptados antes do nginx.
+  # ───────────────────────────────────────────────────────────────────
+  coleta:
+    build:
+      context: ./coleta_apk
+    image: precoemsuor-coleta
+    container_name: precoemsuor-coleta
+    restart: unless-stopped
+    volumes:
+      - ./coleta_apk/data:/data
+    networks:
+      - traefik_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      # Path-routing: maior prioridade que o router do nginx (que é só por Host).
+      - "traefik.http.routers.precoemsuor-coleta.rule=(Host(`precoemsuor.com.br`) || Host(`www.precoemsuor.com.br`)) && (Path(`/coleta_apk`) || Path(`/coleta_apk_coleta`))"
+      - "traefik.http.routers.precoemsuor-coleta.entrypoints=websecure"
+      - "traefik.http.routers.precoemsuor-coleta.tls=true"
+      - "traefik.http.routers.precoemsuor-coleta.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.precoemsuor-coleta.priority=100"
+      - "traefik.http.services.precoemsuor-coleta.loadbalancer.server.port=3000"
+
 networks:
   traefik_net:
     external: true
