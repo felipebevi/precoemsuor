@@ -11,7 +11,7 @@
 
 <!-- ══════════════════════ SEO ══════════════════════ -->
 <title>Preço em Suor — Quanto do seu tempo de trabalho aquele produto custa?</title>
-<meta name="description" content="Aponte a câmera para uma etiqueta e veja, na hora, em quanto tempo do seu trabalho aquele preço se traduz. PWA grátis, OCR 100% local — nenhuma imagem sai do aparelho.">
+<meta name="description" content="Aponte a câmera para uma etiqueta — ou digite o valor — e veja, na hora, em quanto tempo do seu trabalho aquele preço se traduz. Compare até 4 moedas ao mesmo tempo. PWA grátis, OCR 100% local — nenhuma imagem sai do aparelho.">
 <meta name="keywords" content="preço em horas, valor da hora, salário mínimo, calculadora de tempo de trabalho, custo em horas, OCR de etiqueta, PWA grátis, salário em produto, comparar salário mínimo, quanto tempo trabalho para comprar">
 <meta name="author" content="Felipe Bevilaqua">
 <meta name="robots" content="index,follow,max-image-preview:large">
@@ -23,7 +23,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Preço em Suor">
 <meta property="og:title" content="Preço em Suor — quanto do seu tempo aquele preço custa?">
-<meta property="og:description" content="Aponte a câmera para uma etiqueta e veja, na hora, em quanto tempo do seu trabalho aquele preço se traduz. PWA grátis, OCR 100% local.">
+<meta property="og:description" content="Aponte a câmera para uma etiqueta — ou digite o valor — e veja em quanto tempo do seu trabalho aquele preço se traduz. Compare até 4 moedas ao mesmo tempo.">
 <meta property="og:url" content="https://precoemsuor.com.br/">
 <meta property="og:image" content="https://precoemsuor.com.br/og-image.png?v=20260607">
 <meta property="og:image:width" content="1200">
@@ -34,7 +34,7 @@
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Preço em Suor">
-<meta name="twitter:description" content="Aponte a câmera, leia o preço, descubra em quanto tempo de trabalho aquilo se traduz.">
+<meta name="twitter:description" content="Leia o preço pela câmera ou digite o valor, e descubra em quanto tempo de trabalho aquilo se traduz — em até 4 moedas ao mesmo tempo.">
 <meta name="twitter:image" content="https://precoemsuor.com.br/og-image.png?v=20260607">
 <meta name="twitter:image:alt" content="Preço em Suor — calculadora de tempo de trabalho por preço">
 
@@ -139,6 +139,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .field input::placeholder{color:#555;font-weight:500;}
   .row2{display:flex;gap:12px;}
   .row2 .col{flex:1;}
+  .row2 .btn{font-size:15px;padding:15px 8px;}   /* rótulos longos cabem em 1 linha */
   .hint{font-size:12px;color:var(--muted);margin:7px 2px 0;line-height:1.4;}
   .btn{display:block;width:100%;border:0;border-radius:12px;background:var(--accent);
     color:#022a18;font-size:17px;font-weight:800;padding:16px;margin-top:22px;
@@ -248,6 +249,47 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .desk h2{font-size:28px;}
     .qrbox svg{width:200px;height:200px;}
   }
+  /* ───────── Valor manual (digitado) + comparador de até 4 moedas ───────── */
+  .chips-right{display:flex;gap:8px;}
+  /* corpo rolável do sheet: cabeçalho e botões ficam fixos, o meio rola */
+  .sheet-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    margin:0 -2px;padding:0 2px;}
+  .bigresult{margin-top:12px;background:#0d0d0d;border:1px solid var(--border);border-radius:12px;
+    padding:13px 14px;text-align:center;}
+  .bigresult .bigtime{font-size:30px;font-weight:900;letter-spacing:-1px;color:var(--accent);line-height:1.1;}
+  .bigresult .bigtime.off{color:#4a4a4a;}
+  .bigresult .bigsub{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45;}
+  .linkbtn{display:block;margin:10px auto 0;background:transparent;border:0;color:var(--accent);
+    font-size:12.5px;font-weight:700;padding:4px 2px;}
+
+  .cmp{margin-top:16px;}
+  .cmp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    font-size:13px;color:var(--muted);font-weight:600;}
+  .cmp-head b{color:var(--fg);font-weight:800;}
+  .cmp-head .linkbtn{margin:0;}
+  .cmp-picker{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 2px;max-height:186px;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;background:#0d0d0d;
+    border:1px solid var(--border);border-radius:11px;padding:10px;}
+  .cmp-picker[hidden]{display:none;}
+  .cmp-opt{background:#171717;border:1px solid var(--border);color:var(--fg);border-radius:999px;
+    padding:7px 11px;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:5px;}
+  .cmp-opt.on{background:var(--accent);border-color:var(--accent);color:#022a18;}
+  .cmp-opt:disabled{opacity:.32;}
+  .cmp-list{margin-top:10px;display:flex;flex-direction:column;gap:7px;}
+  .cmp-row{background:#0d0d0d;border:1px solid var(--border);border-radius:11px;padding:9px 12px;}
+  .cmp-row .l1{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+  .cmp-row .who{font-size:13.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .cmp-row .time{font-size:16px;font-weight:900;white-space:nowrap;}
+  .cmp-row.best .time{color:var(--accent);}
+  .cmp-row.worst .time{color:var(--danger);}
+  .cmp-row .l2{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    font-size:11.5px;color:var(--muted);margin-top:3px;}
+  .cmp-bar{height:5px;border-radius:3px;background:#232323;margin-top:8px;overflow:hidden;}
+  .cmp-bar i{display:block;height:100%;border-radius:3px;background:#5b5b5b;transition:width .2s;}
+  .cmp-row.best .cmp-bar i{background:var(--accent);}
+  .cmp-row.worst .cmp-bar i{background:var(--danger);}
+  .cmp-empty{color:var(--muted);font-size:12.5px;text-align:center;padding:16px 6px;line-height:1.45;}
+
   .toast{position:fixed;left:50%;bottom:calc(24px + var(--safe-bottom));transform:translateX(-50%);
     z-index:40;background:#fff;color:#111;padding:12px 18px;border-radius:10px;font-weight:700;
     font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;
@@ -276,6 +318,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <section class="sr-only" aria-label="Perguntas frequentes">
   <h2>Como o Preço em Suor funciona?</h2>
   <p>O aplicativo usa a câmera do seu celular para ler o preço da etiqueta. O reconhecimento de texto (OCR) acontece 100% no seu aparelho — nenhuma foto é enviada para a internet. Você informa seu salário mensal (ou escolhe o salário mínimo de um país), e o app calcula em quantas horas, dias ou semanas de trabalho aquele preço se traduz.</p>
+  <h2>Dá para usar sem a câmera, digitando o preço?</h2>
+  <p>Sim. Além de ler a etiqueta pela câmera, você pode digitar o valor à mão e ver na hora quanto tempo de vida ele custa. O modo manual funciona também no computador, sem câmera nenhuma.</p>
+  <h2>Dá para comparar várias moedas ao mesmo tempo?</h2>
+  <p>Sim. O comparador mostra até 4 moedas lado a lado para o mesmo preço: o seu salário e o salário mínimo dos países que você escolher. Cada linha traz o preço convertido naquela moeda e quanto tempo de trabalho ele representa por lá.</p>
   <h2>Preciso me cadastrar?</h2>
   <p>Não. O Preço em Suor é gratuito, sem cadastro, sem login e sem anúncios. Tudo roda no navegador.</p>
   <h2>Posso instalar como app no celular?</h2>
@@ -298,6 +344,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p>O <b>Preço em Suor</b> é um app de câmera: você aponta para a etiqueta de um produto e o app converte o preço em quanto tempo do seu trabalho aquilo custa. <b>Funciona melhor no celular</b>, com a câmera traseira.</p>
       <p>Escaneie o QR code ao lado, ou abra direto:</p>
       <a class="url" href="https://precoemsuor.com.br/">precoemsuor.com.br</a>
+      <p style="margin-top:18px">Sem celular à mão? Dá para <b>digitar o valor</b> e comparar até 4 moedas ao mesmo tempo — isso funciona aqui mesmo, sem câmera.</p>
+      <button class="btn secondary" id="manualDeskBtn" style="max-width:330px;margin-top:6px">Digitar um valor e comparar moedas</button>
     </div>
     <div class="qrbox">
       <object data="qrcode.svg?v=20260607" type="image/svg+xml" aria-label="QR code para precoemsuor.com.br" width="240" height="240"></object>
@@ -339,6 +387,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <p class="hint">Padrão CLT: 220h/mês. Ajuste se trabalhar mais ou menos.</p>
 
     <button id="startBtn" class="btn" disabled>Começar</button>
+    <button id="manualSetupBtn" class="btn ghost" style="margin-top:8px">Só digitar o valor — sem câmera</button>
   </div>
 </section>
 
@@ -352,10 +401,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       <span id="baseBtnLabel">Valor base</span>
     </button>
-    <button class="chip" id="logBtn" aria-label="Histórico">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-      Log
-    </button>
+    <div class="chips-right">
+      <button class="chip" id="manualBtn" aria-label="Digitar valor manualmente">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 19h8"/></svg>
+        Digitar
+      </button>
+      <button class="chip" id="logBtn" aria-label="Histórico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        Log
+      </button>
+    </div>
   </div>
 
   <div class="scanhint" id="scanHint">Alinhe o preço na mira · toque para reler</div>
@@ -366,6 +421,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <h2 style="margin:0 0 6px">Pronto para escanear</h2>
     <p class="tagline" style="max-width:300px">Toque abaixo para ligar a câmera traseira.</p>
     <button class="btn" id="enableCamBtn" style="max-width:280px">Ligar câmera</button>
+    <button class="btn ghost" id="manualGateBtn" style="max-width:280px;margin-top:6px">Ou digitar o valor</button>
   </div>
 
   <!-- Erro de câmera -->
@@ -373,6 +429,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <h2 id="camErrTitle">Câmera indisponível</h2>
     <p id="camErrMsg"></p>
     <button class="btn secondary" id="retryCamBtn" style="max-width:280px">Tentar de novo</button>
+    <button class="btn ghost" id="manualErrBtn" style="max-width:280px;margin-top:6px">Digitar o valor sem câmera</button>
   </div>
 </section>
 
@@ -418,6 +475,42 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </div>
 
+<!-- ════════════════ MODAL — VALOR DIGITADO + COMPARADOR DE MOEDAS ════════════════ -->
+<div class="modal" id="valueModal">
+  <div class="sheet">
+    <h3>Digitar valor <button class="x" data-close="valueModal">&times;</button></h3>
+
+    <div class="sheet-scroll">
+      <label for="manualInput">Valor do produto</label>
+      <div class="field">
+        <span class="prefix">R$</span>
+        <input id="manualInput" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
+      </div>
+
+      <div class="bigresult">
+        <div class="bigtime off" id="manualTime">—</div>
+        <div class="bigsub" id="manualSub">Digite um valor para ver quanto do seu tempo ele custa.</div>
+      </div>
+      <button type="button" class="linkbtn" id="manualBaseBtn" style="display:none">Definir valor base</button>
+
+      <div class="cmp">
+        <div class="cmp-head">
+          <span>Comparar moedas <b id="cmpCount">0/4</b></span>
+          <button type="button" class="linkbtn" id="cmpToggle">Escolher</button>
+        </div>
+        <div class="cmp-picker" id="cmpPicker" hidden></div>
+        <div class="cmp-list" id="cmpList"></div>
+        <p class="hint">Mesmo preço, salário mínimo de cada país: quanto tempo de vida ele custa em cada moeda. <b style="color:var(--accent)">Verde</b> = menos tempo, <b style="color:var(--danger)">vermelho</b> = mais.</p>
+      </div>
+    </div>
+
+    <div class="row2" style="margin-top:14px">
+      <button class="btn secondary col" id="manualLogBtn" style="flex:1.9">Salvar no histórico</button>
+      <button class="btn ghost col" data-close="valueModal">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- Tesseract.js via CDN (jsDelivr). Único worker persistente é criado em JS. -->
@@ -444,7 +537,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     MAX_PLAUSIBLE     : 1000000 // acima disso é ruído de OCR
   };
   /* ╚═════════════════════════════════════════════════════════════╝ */
-  const LS = { salary:'pes_salary', hours:'pes_hours', log:'pes_log', mode:'pes_mode', country:'pes_country' };
+  const LS = { salary:'pes_salary', hours:'pes_hours', log:'pes_log', mode:'pes_mode',
+               country:'pes_country', compare:'pes_compare' };
   const HORAS_MES_DEFAULT = CONFIG.HORAS_MES_DEFAULT;
   const LOG_CAP           = CONFIG.LOG_CAP;
   const OCR_INTERVAL      = CONFIG.OCR_INTERVAL;
@@ -496,6 +590,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   let resultActive = false;               // exibindo resultado (pausa o scan)
   let recentLogs = [];                    // [{val,ts}] p/ dedup do log
   let rafId = null;
+  let ocrPaused = false;                  // OCR suspenso (modal de valor manual aberto)
+  let lastReadPrice = 0;                  // último preço lido pela câmera (p/ pré-preencher o manual)
+  let manualValue = 0;                    // valor digitado atualmente no modal
+  let compareSel = [];                    // até 4 códigos de moeda/país comparados
+  let reopenValueAfterBase = false;       // voltar ao modal manual depois de definir a base
 
   /* ───────── Elementos ───────── */
   const $ = id => document.getElementById(id);
@@ -891,7 +990,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   }
 
   async function ocrTick(){
-    if(!scanning || resultActive || ocrBusy || !workerReady) return;
+    if(!scanning || ocrPaused || resultActive || ocrBusy || !workerReady) return;
     const now=performance.now();
     if(now-lastTick < OCR_INTERVAL) return;
     lastTick=now;
@@ -997,6 +1096,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       }
     }
     if(!items.length) return;
+    // guarda o maior preço da leitura p/ o modal manual abrir já preenchido
+    lastReadPrice = prices.reduce((a,b)=> b.price>a.price?b:a).price;
     items.sort((a,b)=> (a.fy0-b.fy0) || (a.fx0-b.fx0));   // de cima p/ baixo, depois esq→dir
     resultBox={ items, startTs:performance.now(), loggedTs:t };  // loggedTs p/ desfazer no toque
     resultActive=true;
@@ -1075,7 +1176,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const t=$('camErrTitle'), m=$('camErrMsg');
     if(err && err.name==='NotAllowedError'){
       t.textContent='Permissão negada';
-      m.textContent='Você precisa autorizar o acesso à câmera nas configurações do navegador para usar o scanner.';
+      m.textContent='Você precisa autorizar o acesso à câmera nas configurações do navegador para usar o scanner — ou seguir digitando o valor à mão.';
     }else if(err && err.name==='NotFoundError'){
       t.textContent='Câmera não encontrada';
       m.textContent='Nenhuma câmera traseira foi detectada neste dispositivo.';
@@ -1107,7 +1208,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const m = e.moedaFmt ? e.moedaFmt : '—';     // entradas antigas sem moedaFmt → "—"
       tr.dataset.ts=e.ts; tr.dataset.idx=logEntries.indexOf(e);   // p/ identificar no toque
       tr.style.cursor='pointer';
-      tr.innerHTML=`<td class="t">${e.time}</td><td class="p">${e.precoFmt}</td><td class="p">${m}</td><td class="h">${e.horasFmt}</td>`;
+      tr.innerHTML=`<td class="t">${e.time}${e.manual?' ✍':''}</td><td class="p">${e.precoFmt}</td><td class="p">${m}</td><td class="h">${e.horasFmt}</td>`;
       body.appendChild(tr);
     }
   }
@@ -1146,7 +1247,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     el.classList.add('active');
   }
   function openModal(id){ $(id).classList.add('active'); }
-  function closeModal(id){ $(id).classList.remove('active'); }
+  function closeModal(id){
+    $(id).classList.remove('active');
+    if(id==='valueModal') ocrPaused=false;               // volta a ler a câmera
+    // fluxo "não tenho base definida" → definir base → voltar para onde eu estava
+    if(id==='baseModal' && reopenValueAfterBase){
+      reopenValueAfterBase=false;
+      openValueModal(manualValue>0?manualValue:0);
+    }
+  }
   let toastTimer=null;
   function showToast(msg){
     const t=$('toast'); t.textContent=msg; t.classList.add('show');
@@ -1181,6 +1290,184 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       }
     } else { s=parseBR($('salaryInput2').value); }
     $('rateHint').textContent = (s>0 && h>0) ? `Valor da hora: ${formatBRL(s/h)}${extra}` : '';
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     VALOR MANUAL (digitado) + COMPARADOR DE ATÉ 4 MOEDAS
+     Mesmo preço em R$, várias "bases de vida": o salário do usuário e/ou o
+     salário mínimo de outros países. Tudo recalcula ao vivo enquanto digita.
+     ════════════════════════════════════════════════════════════ */
+  const ME_CODE = '__me';          // pseudo-país: o salário do próprio usuário
+  const CMP_MAX = 4;               // teto de moedas comparadas ao mesmo tempo
+
+  // Bases comparáveis: o usuário (se tiver salário) + todos os países.
+  // mensalBRL = salário mensal daquela base convertido para R$ (o preço lido é em R$).
+  function compareBases(){
+    const out=[];
+    if(salary>0){
+      out.push({ code:ME_CODE, bandeira:'🧍', nome:'Meu salário', moeda:'BRL', simbolo:'R$',
+                 cotacaoBRL:1, horas:horasMes>0?horasMes:HORAS_MES_DEFAULT, mensalBRL:salary });
+    }
+    if(economias) for(const p of economias.paises){
+      const h = p.horasMensais>0 ? p.horasMensais : HORAS_MES_DEFAULT;
+      out.push({ code:p.codigo, bandeira:p.bandeira, nome:p.nome, moeda:p.moeda, simbolo:p.simbolo,
+                 cotacaoBRL:p.cotacaoBRL||0, horas:h,
+                 mensalBRL:p.salarioMinimoMensal*(p.cotacaoBRL||0) });
+    }
+    return out;
+  }
+  // valor da hora daquela base, sempre em R$
+  function baseHoraBRL(b){ return (b && b.mensalBRL>0 && b.horas>0) ? b.mensalBRL/b.horas : 0; }
+  // preço em R$ → mesmo preço escrito na moeda daquela base
+  function baseLocalFmt(b, precoBRL){
+    if(!b || !(b.cotacaoBRL>0)) return '';
+    const v = precoBRL/b.cotacaoBRL;
+    // moeda forte + preço baixo viraria "0,00": abre mais casas nesse caso
+    const casas = v<1 ? 4 : 2;
+    return `${b.simbolo} ${v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:casas})}`;
+  }
+
+  function loadCompareSel(){
+    try{ const a=JSON.parse(localStorage.getItem(LS.compare)); return Array.isArray(a)?a.slice(0,CMP_MAX):[]; }
+    catch(e){ return []; }
+  }
+  function saveCompareSel(){ localStorage.setItem(LS.compare, JSON.stringify(compareSel)); }
+
+  // Primeira abertura: já vem com a base do usuário + Brasil/EUA, p/ nunca abrir vazio.
+  function seedCompareSel(){
+    const avail=compareBases().map(b=>b.code);
+    compareSel=compareSel.filter(c=>avail.includes(c));
+    if(compareSel.length) return;
+    const seed=[];
+    if(baseMode==='country' && avail.includes(countryCode)) seed.push(countryCode);
+    else if(avail.includes(ME_CODE)) seed.push(ME_CODE);
+    for(const c of ['BR','US']) if(seed.length<3 && !seed.includes(c) && avail.includes(c)) seed.push(c);
+    compareSel=seed.slice(0,CMP_MAX);
+    saveCompareSel();
+  }
+
+  function toggleCompare(code){
+    const i=compareSel.indexOf(code);
+    if(i>=0) compareSel.splice(i,1);
+    else{
+      if(compareSel.length>=CMP_MAX){ showToast(`Máximo de ${CMP_MAX} moedas ao mesmo tempo.`); return; }
+      compareSel.push(code);
+    }
+    saveCompareSel(); renderComparePicker(); renderCompare();
+  }
+
+  function renderComparePicker(){
+    const box=$('cmpPicker'); if(!box) return;
+    box.innerHTML='';
+    for(const b of compareBases()){
+      const on=compareSel.includes(b.code);
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className='cmp-opt'+(on?' on':'');
+      // "🇩🇪 DE·EUR": 5 países dividem o EUR, então o código do país é o que
+      // realmente distingue — e sobrevive a fontes sem emoji de bandeira.
+      btn.textContent = b.code===ME_CODE ? `${b.bandeira} ${b.nome}`
+                                         : `${b.bandeira} ${b.code}·${b.moeda}`;
+      btn.title=`${b.nome} · ${b.moeda}`;
+      btn.disabled = !on && compareSel.length>=CMP_MAX;   // já cheio → só dá p/ tirar
+      btn.addEventListener('click', ()=>toggleCompare(b.code));
+      box.appendChild(btn);
+    }
+    $('cmpCount').textContent=`${compareSel.length}/${CMP_MAX}`;
+  }
+
+  // Uma linha por moeda: nome, preço naquela moeda, tempo de trabalho e barra
+  // proporcional ao pior tempo. Verde = menos tempo, vermelho = mais tempo.
+  function renderCompare(){
+    const list=$('cmpList'); if(!list) return;
+    list.innerHTML='';
+    const bases=compareBases();
+    const sel=compareSel.map(c=>bases.find(b=>b.code===c)).filter(Boolean);
+    if(!sel.length){
+      list.innerHTML='<div class="cmp-empty">Escolha até '+CMP_MAX+' moedas para ver, lado a lado, quanto tempo de vida esse valor custa em cada uma.</div>';
+      return;
+    }
+    const val=manualValue;
+    const rows=sel.map(b=>{
+      const hora=baseHoraBRL(b);
+      return { b, hora, horas:(val>0 && hora>0) ? val/hora : null };
+    });
+    const times=rows.map(r=>r.horas).filter(h=>h!=null);
+    const min=times.length?Math.min(...times):0;
+    const max=times.length?Math.max(...times):0;
+    for(const r of rows){
+      let cls='cmp-row';
+      if(times.length>1 && r.horas!=null && min!==max){
+        if(r.horas===min) cls+=' best'; else if(r.horas===max) cls+=' worst';
+      }
+      const div=document.createElement('div');
+      div.className=cls;
+      const timeTxt = r.horas!=null ? formatDuration(r.horas) : '—';
+      const local   = (val>0 && baseLocalFmt(r.b,val)) || '—';
+      const rate    = r.hora>0 ? `${formatBRL(r.hora)}/h` : 'sem cotação';
+      const pct     = (r.horas!=null && max>0) ? Math.max(4, r.horas/max*100) : 0;
+      const l1=document.createElement('div'); l1.className='l1';
+      const who=document.createElement('span'); who.className='who';
+      who.textContent=`${r.b.bandeira} ${r.b.nome}`;
+      const tm=document.createElement('span'); tm.className='time'; tm.textContent=timeTxt;
+      l1.appendChild(who); l1.appendChild(tm);
+      const l2=document.createElement('div'); l2.className='l2';
+      const lv=document.createElement('span'); lv.textContent=local;
+      const rt=document.createElement('span'); rt.textContent=rate;
+      l2.appendChild(lv); l2.appendChild(rt);
+      const bar=document.createElement('div'); bar.className='cmp-bar';
+      const fill=document.createElement('i'); fill.style.width=pct+'%';
+      bar.appendChild(fill);
+      div.appendChild(l1); div.appendChild(l2); div.appendChild(bar);
+      list.appendChild(div);
+    }
+  }
+
+  // Recalcula tudo a cada tecla digitada.
+  function manualRecalc(){
+    const v=parseBR($('manualInput').value);
+    manualValue = (v>0 && v<=MAX_PLAUSIBLE) ? v : 0;
+    const vh=valorHora();
+    const t=$('manualTime'), sub=$('manualSub');
+    if(manualValue>0 && vh>0){
+      const p = baseMode==='country' ? paisAtual() : null;
+      t.className='bigtime';
+      t.textContent=formatDuration(manualValue/vh);
+      sub.textContent=`${formatBRL(manualValue)} · ${p ? p.bandeira+' '+p.nome : 'seu salário'} · ${formatBRL(vh)}/h`;
+    } else if(manualValue>0){
+      t.className='bigtime off'; t.textContent='—';
+      sub.textContent='Defina o valor base para converter esse preço em tempo de trabalho.';
+    } else {
+      t.className='bigtime off'; t.textContent='—';
+      sub.textContent='Digite um valor para ver quanto do seu tempo ele custa.';
+    }
+    $('manualBaseBtn').style.display = vh>0 ? 'none' : 'block';
+    $('manualLogBtn').disabled = !(manualValue>0 && vh>0);
+    renderCompare();
+  }
+
+  function openValueModal(prefill){
+    compareSel=loadCompareSel();
+    seedCompareSel();
+    if(prefill>0){
+      $('manualInput').value=prefill.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    }
+    renderComparePicker();
+    manualRecalc();
+    ocrPaused=true;                       // não deixa a câmera disparar resultado por baixo do modal
+    openModal('valueModal');
+    // sem valor pré-preenchido → abre o teclado direto; com valor, deixa o resultado à vista
+    if(!(prefill>0)) setTimeout(()=>{ try{ $('manualInput').focus(); }catch(e){} }, 140);
+  }
+
+  function logManual(){
+    const vh=valorHora();
+    if(!(manualValue>0 && vh>0)) return;
+    const horas=manualValue/vh, t=Date.now();
+    addLog({ ts:t, time:nowHM(), precoLido:manualValue, precoFmt:formatBRL(manualValue),
+             horasDecimais:horas, horasFmt:formatDuration(horas),
+             moedaFmt:convertedFmt(manualValue), manual:true });
+    showToast('Salvo no histórico.');
   }
 
   /* ════════════════════════════════════════════════════════════
@@ -1299,23 +1586,38 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     $('hoursInput').addEventListener('input', updateCountryHint);
     validateSetup();
 
-    $('startBtn').addEventListener('click', ()=>{
+    // aplica o que está preenchido na tela de setup como valor base.
+    // silent=true → usado pelo atalho "só digitar": não reclama se estiver incompleto.
+    function applySetupBase(silent){
       const mode=segMode($('setupSeg'));
-      horasMes=parseBR($('hoursInput').value)||HORAS_MES_DEFAULT;
+      const h=parseBR($('hoursInput').value)||HORAS_MES_DEFAULT;
       if(mode==='country'){
-        countryCode=$('countrySelect').value; baseMode='country';
-        if(!baseReady()){ showToast('Selecione um país válido.'); return; }
+        const prev=countryCode;
+        countryCode=$('countrySelect').value; baseMode='country'; horasMes=h;
+        if(!baseReady()){
+          countryCode=prev;
+          if(!silent) showToast('Selecione um país válido.');
+          return false;
+        }
       } else {
-        salary=parseBR($('salaryInput').value);
-        if(!(salary>0)) return;
-        baseMode='custom';
+        const s=parseBR($('salaryInput').value);
+        if(!(s>0)) return false;
+        salary=s; baseMode='custom'; horasMes=h;
       }
       persistBase();
-      goToCamera();
-    });
+      return true;
+    }
+
+    $('startBtn').addEventListener('click', ()=>{ if(applySetupBase(false)) goToCamera(); });
+
+    // atalho: usar o app sem câmera nenhuma, só digitando o valor
+    $('manualSetupBtn').addEventListener('click', ()=>{ applySetupBase(true); openValueModal(0); });
+    $('manualDeskBtn').addEventListener('click', ()=>openValueModal(0));
 
     $('enableCamBtn').addEventListener('click', startCamera);
     $('retryCamBtn').addEventListener('click', startCamera);
+    $('manualGateBtn').addEventListener('click', e=>{ e.stopPropagation(); openValueModal(0); });
+    $('manualErrBtn').addEventListener('click', e=>{ e.stopPropagation(); openValueModal(0); });
 
     // toque na tela (fora dos botões) descarta a leitura atual e reinicia o scan
     camScreen.addEventListener('click', e=>{
@@ -1325,6 +1627,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     // stopPropagation evita que o handler de "toque para reler" no camScreen rode junto
     $('baseBtn').addEventListener('click', e=>{ e.stopPropagation(); openBase(false); });
+    // abre já com o último preço lido pela câmera — vira "comparar este preço"
+    $('manualBtn').addEventListener('click', e=>{ e.stopPropagation(); openValueModal(lastReadPrice); });
     $('logBtn').addEventListener('click', e=>{ e.stopPropagation(); renderLog(); openModal('logModal'); });
 
     // ----- modal de valor base -----
@@ -1358,6 +1662,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       updateBaseChip();
       closeModal('baseModal');
       showToast('Valor base atualizado.');
+    });
+
+    // ----- modal de valor digitado / comparador -----
+    $('manualInput').addEventListener('input', manualRecalc);
+    $('manualLogBtn').addEventListener('click', logManual);
+    $('manualBaseBtn').addEventListener('click', ()=>{
+      reopenValueAfterBase=true;            // closeModal('baseModal') traz de volta pra cá
+      closeModal('valueModal');
+      openBase(false);
+    });
+    $('cmpToggle').addEventListener('click', ()=>{
+      const box=$('cmpPicker'), abrir=box.hasAttribute('hidden');
+      if(abrir) box.removeAttribute('hidden'); else box.setAttribute('hidden','');
+      $('cmpToggle').textContent = abrir ? 'Fechar' : 'Escolher';
     });
 
     $('exportBtn').addEventListener('click', exportLog);

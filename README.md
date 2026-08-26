@@ -6,6 +6,9 @@ aquele produto custa, sobreposto na tela em cima de uma mira.
 
 > Nenhuma imagem sai do aparelho. Todo o reconhecimento roda no dispositivo.
 
+Além da câmera, dá para **digitar o valor à mão** e **comparar até 4 moedas ao mesmo tempo**
+— ambos recalculam ao vivo enquanto você digita.
+
 ## Como funciona
 
 1. Na primeira vez, escolha o **valor base**: **seu salário** mensal líquido **ou** o
@@ -22,8 +25,30 @@ aquele produto custa, sobreposto na tela em cima de uma mira.
    num bloco com as **cores amostradas daquela linha da etiqueta** (contraste WCAG ≥ 4.5:1).
 6. O resultado fica nítido por ~4,5 s e esmaece (~6 s no total); o OCR retoma no início do
    *fade*. Tudo é calibrável no objeto **`CONFIG`** no topo do `<script>` em `index.html`.
-7. Botões discretos para editar o **valor base** e ver o **histórico** (exportável via
-   compartilhamento nativo do celular, com *fallback* para cópia/download `.txt`).
+7. Botões discretos para editar o **valor base**, abrir o modo **digitar valor** e ver o
+   **histórico** (exportável via compartilhamento nativo do celular, com *fallback* para
+   cópia/download `.txt`).
+
+## Digitar valor (sem câmera) + comparar até 4 moedas
+
+O chip **Digitar** (barra superior da câmera) abre um painel que também é alcançável de
+onde a câmera ainda não está ligada — tela de setup, gate "Ligar câmera", tela de erro de
+câmera e a landing de desktop. Ou seja: **o app inteiro funciona sem câmera**, inclusive no
+computador.
+
+- **Valor digitado:** você informa o preço em R$ e vê na hora o tempo de trabalho, o valor
+  da hora usado e um botão para gravar a leitura no mesmo histórico (marcada com `✍`).
+  Aberto a partir da câmera, o campo já vem **pré-preenchido com o último preço lido**.
+- **Comparador:** escolha até **4 moedas** (o seu salário + o salário mínimo de qualquer
+  país da lista) e veja, para o **mesmo preço**, três coisas por linha: o preço convertido
+  naquela moeda, o valor da hora daquela base em R$ e o **tempo de trabalho** — com barra
+  proporcional ao pior tempo, verde no menor e vermelho no maior.
+- A seleção de moedas fica salva em `localStorage` (`pes_compare`), então volta pronta na
+  próxima abertura. O OCR fica **pausado** enquanto o painel está aberto, para a câmera não
+  disparar um resultado por baixo do modal.
+
+Cada base usa a **jornada legal do próprio país** (BR 220h/mês, FR 152h, US 173h…), então a
+comparação é "quanto tempo de vida esse preço custa em cada lugar", não só conversão de câmbio.
 
 `valor_hora = salario_mensal / HORAS_MES` · `horas = preço / valor_hora`
 
@@ -31,7 +56,7 @@ aquele produto custa, sobreposto na tela em cima de uma mira.
 
 | Arquivo | Função |
 |---|---|
-| `index.html` | App completo e autocontido (HTML + CSS + JS inline). Funciona sozinho. |
+| `index.html` | App completo e autocontido (HTML + CSS + JS inline). Câmera, valor digitado e comparador de moedas. Funciona sozinho. |
 | `economias.json` | Brasil + 20 maiores economias: bandeira, nome, moeda, salário mínimo mensal e `cotacaoBRL`. |
 | `update-rates.sh` | Atualiza as cotações em `economias.json` via API pública de câmbio. Para o cron. |
 | `manifest.json`, `icon.svg`, `sw.js` | Instalabilidade (PWA) + cache offline opcional. |
