@@ -65,7 +65,14 @@ chmod +x update-rates.sh deploy.sh 2>/dev/null || true
 # Cotações frescas já no deploy — o cron só roda às 06:00.
 bash update-rates.sh || echo "  aviso: não deu para atualizar as cotações agora (segue com as do repo)"
 
-docker compose up --build -d
+# O compose monta economias.json como bind mount de ARQUIVO UNICO, preso ao
+# inode. O git substitui arquivo por temp+rename, entao todo checkout/pull acima
+# gera um inode novo e o container fica lendo o inode antigo, orfao — servindo
+# cotacao velha sem erro nenhum, indistinguivel de "deu certo".
+# '--build' sozinho so recria quando a imagem muda: um deploy sem alteracao de
+# codigo cairia exatamente nesse buraco. Por isso o recreate e forcado.
+# (o 'coleta' monta um DIRETORIO, que e resolvido por path e nao sofre disso)
+docker compose up --build -d --force-recreate
 docker image prune -f
 ENDSSH
 

@@ -73,6 +73,21 @@ numa API pública gratuita (`open.er-api.com`, com fallback `frankfurter.app`) e
 O `docker-compose.yml` monta o `economias.json` do host como volume — então o cron atualiza o
 arquivo e o nginx já serve a versão nova **sem rebuild**.
 
+> **Duas armadilhas reais deste arquivo** (ambas já tratadas no `deploy.sh`):
+>
+> 1. `economias.json` é **rastreado pelo git** e reescrito no lugar pelo cron, então o working
+>    tree do servidor vive sujo. Sem descartar a cópia local antes, o dia em que um commit tocar
+>    esse arquivo o `git pull` aborta com *"local changes would be overwritten"* e o deploy morre
+>    no meio. Descartar é seguro: o `update-rates.sh` regenera **tudo** (cotações vêm da API,
+>    salários e horas vêm do `SNAPSHOT` dentro do próprio script) — a versão commitada só serve
+>    de semente para clone novo.
+> 2. O volume é um bind mount de **arquivo único**, preso ao *inode*. O git troca arquivo por
+>    `temp + rename`, ou seja, todo `checkout`/`pull` cria um inode novo e o container continua
+>    lendo o antigo, órfão — servindo cotação velha **sem erro nenhum**. Por isso o deploy usa
+>    `--force-recreate`: `--build` sozinho não recria quando a imagem não muda.
+>
+> O cron em si não sofre disso: `update-rates.sh` escreve *in place*, preservando o inode.
+
 Agende no cron do servidor (ex.: todo dia às 06:00):
 
 ```cron
