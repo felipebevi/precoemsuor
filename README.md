@@ -21,7 +21,7 @@ Além da câmera, dá para **digitar o valor à mão** e **comparar até 4 moeda
 4. Mostra o resultado **na primeira leitura** (sem espera). Se houver **vários preços
    empilhados** (um embaixo do outro), lê todos e exibe **um tempo por linha**, alinhado
    à posição real de cada preço.
-5. Cada linha mostra o **tempo de trabalho** (`4h 12min`, `2d 3h`, `45s`...) + o preço,
+5. Cada linha mostra o **tempo de trabalho** (`4h 12min`, `2d 3h`, `1 mês 2sem`...) + o preço,
    num bloco com as **cores amostradas daquela linha da etiqueta** (contraste WCAG ≥ 4.5:1).
 6. O resultado fica nítido por ~4,5 s e esmaece (~6 s no total); o OCR retoma no início do
    *fade*. Tudo é calibrável no objeto **`CONFIG`** no topo do `<script>` em `index.html`.
@@ -51,6 +51,34 @@ Cada base usa a **jornada legal do próprio país** (BR 220h/mês, FR 152h, US 1
 comparação é "quanto tempo de vida esse preço custa em cada lugar", não só conversão de câmbio.
 
 `valor_hora = salario_mensal / HORAS_MES` · `horas = preço / valor_hora`
+
+## Como a duração é escrita (dia ÚTIL, não dia de calendário)
+
+O número calculado é em **horas de trabalho**, então a escada de exibição sobe por dia
+útil, definido no `CONFIG`:
+
+| Unidade | Equivale a |
+|---|---|
+| `1d` | `HORAS_DIA_UTIL` = **8h** |
+| `1sem` | `DIAS_SEMANA_UTIL` = 5 dias = **40h** |
+| `1 mês` | `DIAS_MES_UTIL` = 22 dias = **176h** |
+
+> **Bug corrigido (2026-08-27):** a versão anterior dividia as horas de trabalho por **24**
+> (dia de calendário) e por 7. Com isso `1d` queria dizer 24h de trabalho — três dias reais —
+> e `1sem` queria dizer 168h, quase um mês inteiro de expediente. Os rótulos erravam por um
+> fator de 3. No comparador o sintoma era visível: uma linha `1d` com a barra cheia ao lado de
+> uma `6h` com a barra curtinha, porque a barra (sempre proporcional às horas reais, e
+> portanto correta) mostrava 6/24 = 25%, enquanto o certo é 6h valerem 75% de um dia de 8h.
+> Quem mentia era o rótulo, não a barra.
+
+As unidades são **fixas de propósito**, e não derivadas do `horasMensais` de cada país. No
+comparador as linhas ficam lado a lado: se "1 dia" valesse 8h numa base e 7h em outra, duas
+linhas escritas `1d` teriam barras de tamanhos diferentes — recriando a mesma incoerência
+entre rótulo e barra. As horas legais de cada país continuam onde importam: no cálculo do
+**valor da hora**.
+
+Entradas antigas do histórico são **reformatadas na exibição** a partir do `horasDecimais`
+que já era salvo, para o log não conviver com dois padrões.
 
 ## Arquivos
 

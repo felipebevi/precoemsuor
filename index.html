@@ -500,7 +500,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
         <div class="cmp-picker" id="cmpPicker" hidden></div>
         <div class="cmp-list" id="cmpList"></div>
-        <p class="hint">Mesmo preço, salário mínimo de cada país: quanto tempo de vida ele custa em cada moeda. <b style="color:var(--accent)">Verde</b> = menos tempo, <b style="color:var(--danger)">vermelho</b> = mais.</p>
+        <p class="hint">Mesmo preço, salário mínimo de cada país: quanto tempo de vida ele custa em cada moeda. <b style="color:var(--accent)">Verde</b> = menos tempo, <b style="color:var(--danger)">vermelho</b> = mais.<br>Contas em tempo de trabalho: <b>1d = 8h</b> · <b>1sem = 5d</b> · <b>1 mês = 22d</b>.</p>
       </div>
     </div>
 
@@ -532,6 +532,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     RESULT_HOLD_MS    : 4500,   // tempo nítido do resultado
     RESULT_FADE_MS    : 1500,   // duração do fade-out (HOLD+FADE ≈ 6s no total)
     DEDUP_WINDOW_MS   : 10000,  // janela p/ não duplicar a mesma leitura no log
+    // Unidades de TRABALHO usadas só para exibir a duração. Nada aqui entra
+    // no cálculo do valor da hora — esse continua vindo do salário e das
+    // horas/mês de cada país. São fixas de propósito: no comparador as linhas
+    // ficam lado a lado, e se "1 dia" valesse 8h numa base e 7h em outra, duas
+    // linhas escritas "1d" teriam barras de tamanhos diferentes — exatamente a
+    // incoerência entre rótulo e barra que este bloco existe para evitar.
+    HORAS_DIA_UTIL    : 8,      // 1 dia de trabalho exibido
+    DIAS_SEMANA_UTIL  : 5,      // 1 semana de trabalho = 5 dias = 40h
+    DIAS_MES_UTIL     : 22,     // 1 mês de trabalho = 22 dias = 176h
     MULTILINE         : true,   // ler vários preços empilhados (1 por linha)
     MAX_LINES         : 6,      // teto de preços exibidos ao mesmo tempo
     MAX_PLAUSIBLE     : 1000000 // acima disso é ruído de OCR
@@ -631,8 +640,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
   }
 
-  /* Formata duração no MENOR formato possível:
-     <1min → s | <1h → min | <1dia → h+min | <semana → dias | senão semanas */
+  /* Formata duração de TRABALHO no menor formato possível:
+     <1min → s | <1h → min | <1 dia → h+min | <1 semana → d+h |
+     <1 mês → sem+d | senão meses+sem
+
+     O número que entra aqui é em HORAS DE TRABALHO, então a escada sobe por
+     dia ÚTIL (8h), e não por dia de calendário (24h). Convertendo por 24 —
+     como era antes — "1d" queria dizer 24h de trabalho, ou seja 3 dias reais,
+     e "1sem" queria dizer 168h, quase um mês inteiro de trabalho. Os rótulos
+     mentiam por um fator de 3, e no comparador isso aparecia como uma linha
+     "1d" com barra cheia ao lado de uma "6h" com barra curtinha (6/24 = 25%),
+     quando o certo é 6h valer 75% de um dia de 8h. */
   function formatDuration(hoursDec){
     const totalSec = hoursDec*3600;
     if(totalSec < 60)  return Math.max(1,Math.round(totalSec))+'s';
@@ -640,18 +658,39 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const m=Math.floor(totalSec/60), s=Math.round(totalSec%60);
       return s>0 ? `${m}min ${s}s` : `${m}min`;
     }
-    if(hoursDec < 24){                         // < 1 dia → horas + min
+    const HD = CONFIG.HORAS_DIA_UTIL;                    // horas em 1 dia útil
+    const HS = HD * CONFIG.DIAS_SEMANA_UTIL;             // horas em 1 semana útil
+    const HM = HD * CONFIG.DIAS_MES_UTIL;                // horas em 1 mês útil
+
+    if(hoursDec < HD){                         // < 1 dia útil → horas + min
       const h=Math.floor(hoursDec), m=Math.round((hoursDec-h)*60);
       return m>0 ? `${h}h ${m}min` : `${h}h`;
     }
-    const days = hoursDec/24;
-    if(days < 7){                              // < 1 semana → dias + horas
-      const d=Math.floor(days), h=Math.round((days-d)*24);
+    if(hoursDec < HS){                         // < 1 semana útil → dias + horas
+      let d=Math.floor(hoursDec/HD), h=Math.round(hoursDec-d*HD);
+      if(h>=HD){ d+=1; h=0; }                  // 39,9h nao pode virar "4d 8h"
       return h>0 ? `${d}d ${h}h` : `${d}d`;
     }
-    const weeks = days/7;                      // semanas + dias
-    const w=Math.floor(weeks), d=Math.round((weeks-w)*7);
-    return d>0 ? `${w}sem ${d}d` : `${w}sem`;
+    if(hoursDec < HM){                         // < 1 mês útil → semanas + dias
+      let sem=Math.floor(hoursDec/HS), d=Math.round((hoursDec-sem*HS)/HD);
+      if(d>=CONFIG.DIAS_SEMANA_UTIL){ sem+=1; d=0; }
+      return d>0 ? `${sem}sem ${d}d` : `${sem}sem`;
+    }
+    const mes=Math.floor(hoursDec/HM);         // meses + semanas
+    const sem=Math.round((hoursDec-mes*HM)/HS);
+    const rot=`${mes} ${mes===1?'mês':'meses'}`;
+    return sem>0 ? `${rot} ${sem}sem` : rot;
+  }
+
+  // O histórico guarda o texto já formatado, mas entradas gravadas antes da
+  // correção do dia útil trazem o rótulo antigo (onde "1d" valia 24h). Como
+  // horasDecimais também foi salvo, reformatamos na exibição — assim o
+  // histórico antigo passa a bater com o resto do app em vez de conviver com
+  // dois padrões. Só cai no texto salvo se a entrada não tiver o decimal.
+  function horasFmtDe(e){
+    return (e && typeof e.horasDecimais === 'number' && isFinite(e.horasDecimais))
+      ? formatDuration(e.horasDecimais)
+      : (e && e.horasFmt) || '—';
   }
 
   function nowHM(){
@@ -1208,7 +1247,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const m = e.moedaFmt ? e.moedaFmt : '—';     // entradas antigas sem moedaFmt → "—"
       tr.dataset.ts=e.ts; tr.dataset.idx=logEntries.indexOf(e);   // p/ identificar no toque
       tr.style.cursor='pointer';
-      tr.innerHTML=`<td class="t">${e.time}${e.manual?' ✍':''}</td><td class="p">${e.precoFmt}</td><td class="p">${m}</td><td class="h">${e.horasFmt}</td>`;
+      tr.innerHTML=`<td class="t">${e.time}${e.manual?' ✍':''}</td><td class="p">${e.precoFmt}</td><td class="p">${m}</td><td class="h">${horasFmtDe(e)}</td>`;
       body.appendChild(tr);
     }
   }
@@ -1218,7 +1257,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     // texto puro, linha por linha
     const lines = logEntries.map(e=>{
       const m = e.moedaFmt ? ` | ${e.moedaFmt}` : '';
-      return `${e.time} | ${e.precoFmt}${m} | ${e.horasFmt}`;
+      return `${e.time} | ${e.precoFmt}${m} | ${horasFmtDe(e)}`;
     });
     const text = 'Preço em Suor — histórico\n'+lines.join('\n');
     if(navigator.share){
@@ -1690,7 +1729,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const ts=parseInt(tr.dataset.ts,10), idx=parseInt(tr.dataset.idx,10);
       const entry = !isNaN(idx) ? logEntries[idx] : logEntries.find(x=>x.ts===ts);
       if(!entry) return;
-      if(!confirm(`Remover esta leitura?\n\n${entry.time}  ${entry.precoFmt}  →  ${entry.horasFmt}`)) return;
+      if(!confirm(`Remover esta leitura?\n\n${entry.time}  ${entry.precoFmt}  →  ${horasFmtDe(entry)}`)) return;
       // remove pela posição (mais seguro: várias entradas podem ter o mesmo ts)
       if(!isNaN(idx) && logEntries[idx]===entry) logEntries.splice(idx,1);
       else logEntries=logEntries.filter(x=>x!==entry);
