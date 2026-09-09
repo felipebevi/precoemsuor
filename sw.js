@@ -3,7 +3,7 @@
    - HTML/navegação  → NETWORK-FIRST (sempre pega a versão nova do app; cai no cache se offline)
    - demais assets   → STALE-WHILE-REVALIDATE (rápido e atualiza em background)
    Bump CACHE a cada release para limpar versões antigas. */
-const CACHE = 'preco-em-suor-v12';
+const CACHE = 'preco-em-suor-v13';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg', './economias.json',
                 './favicon-16.png', './favicon-32.png', './icon-192.png', './icon-512.png',
                 './apple-touch-icon.png', './og-image.png'];

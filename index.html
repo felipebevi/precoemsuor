@@ -491,7 +491,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="bigtime off" id="manualTime">—</div>
         <div class="bigsub" id="manualSub">Digite um valor para ver quanto do seu tempo ele custa.</div>
       </div>
-      <button type="button" class="linkbtn" id="manualBaseBtn" style="display:none">Definir valor base</button>
+      <button type="button" class="linkbtn" id="manualBaseBtn">Alterar valor base</button>
 
       <div class="cmp">
         <div class="cmp-head">
@@ -1480,7 +1480,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       t.className='bigtime off'; t.textContent='—';
       sub.textContent='Digite um valor para ver quanto do seu tempo ele custa.';
     }
-    $('manualBaseBtn').style.display = vh>0 ? 'none' : 'block';
+    $('manualBaseBtn').textContent = vh>0 ? 'Alterar valor base' : 'Definir valor base';
+    $('manualBaseBtn').style.display = 'block';
     $('manualLogBtn').disabled = !(manualValue>0 && vh>0);
     renderCompare();
   }
