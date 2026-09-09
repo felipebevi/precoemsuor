@@ -11,8 +11,8 @@ Além da câmera, dá para **digitar o valor à mão** e **comparar até 4 moeda
 
 ## Como funciona
 
-1. Na primeira vez, escolha o **valor base**: **seu salário** mensal líquido **ou** o
-   **salário mínimo de um país** (Brasil + 20 maiores economias, com bandeira). No modo país,
+1. Por padrão, o app usa o **salário mínimo do Brasil** como valor base. Se quiser, troque para **seu salário** mensal líquido ou para o
+   **salário mínimo de outro país** (Brasil + 20 maiores economias, com bandeira). No modo país,
    o mínimo local é convertido para R$ pela cotação atual — então, se você "ganhasse em dólar",
    vê quanto tempo trabalharia por um produto **precificado em real** (evidenciando a diferença).
    Também dá para ajustar as horas/mês (padrão CLT = 220).

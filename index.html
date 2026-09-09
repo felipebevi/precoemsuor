@@ -561,7 +561,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   let horasMes = parseFloat(localStorage.getItem(LS.hours)) || HORAS_MES_DEFAULT;
   let logEntries = loadLog();
   // base = 'custom' (salário próprio) ou 'country' (salário mínimo de um país)
-  let baseMode = localStorage.getItem(LS.mode) || 'custom';
+  let baseMode = localStorage.getItem(LS.mode) || 'country';
   let countryCode = localStorage.getItem(LS.country) || 'BR';
   let economias = null;     // dados de países (economias.json ou fallback)
 
